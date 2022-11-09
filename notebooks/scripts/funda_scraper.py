@@ -13,6 +13,7 @@ import json
 import pandas as pd
 from aiolimiter import AsyncLimiter
 
+
 limiter = AsyncLimiter(5, 1)
 
 config_path = Path.cwd().parent / 'config' / 'config.json'
