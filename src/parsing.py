@@ -20,7 +20,7 @@ def str_from_tag(tag: Tag, strip=True, **kwargs) -> Union[None, str]:
         print(e)
 
 
-def numbers_from_str(string: str, join=False) -> Union[None, int, list[int]]:
+def digits_from_str(string: str, join=False) -> Union[None, int, list[int]]:
     """
     Extracts digits from a string
     :param string:
@@ -30,13 +30,13 @@ def numbers_from_str(string: str, join=False) -> Union[None, int, list[int]]:
     if string is None:
         return None
 
-    results = re.findall('\d+', string)
+    digits_list = re.findall('\d+', string)
 
-    if not results:
+    if not digits_list:
         return None
 
     if join:
-        number_str = ''.join(results)
-        return int(number_str)
+        digits_str = ''.join(digits_list)
+        return int(digits_str)
 
-    return list(map(int, results))
+    return list(map(int, digits_list))
