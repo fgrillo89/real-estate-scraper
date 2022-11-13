@@ -1,0 +1,18 @@
+{
+  "headers": {
+    "authority": "www.funda.nl",
+    "accept": "*/*",
+    "accept-language": "en-US,en;q=0.9,nl;q=0.8,it;q=0.7",
+    "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+    "origin": "https://www.funda.nl",
+    "referer": "https://www.funda.nl/koop/rotterdam/",
+    "sec-ch-ua": "'Chromium';v='106', 'Google Chrome';v='106', 'Not;A=Brand';v='99'",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "Windows",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36",
+    "x-requested-with": "XMLHttpRequest"
+  }
+}

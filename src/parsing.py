@@ -1,6 +1,10 @@
+from enum import Enum
+
+import pandas as pd
 from bs4.element import Tag
 from typing import Union
 import re
+
 
 
 def str_from_tag(tag: Tag, strip=True, **kwargs) -> Union[None, str]:
@@ -19,7 +23,16 @@ def str_from_tag(tag: Tag, strip=True, **kwargs) -> Union[None, str]:
     except AttributeError as e:
         print(e)
 
+
+def parse_shallow_dataframe(house_shallow: Enum, df: pd.DataFrame) -> pd.DataFrame:
+    for attribute in house_shallow:
+        if attribute.value.type == 'numeric':
+            df[attribute.name] = pd.to_numeric(df[attribute.name].str.replace('\D+', '', regex=True))
+    return df
+
+
 #
+
 # def digits_from_str(string: str, join=False) -> Union[None, int, list[int]]:
 #     """
 #     Extracts digits from a string

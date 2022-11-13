@@ -1,15 +1,15 @@
 import json
+from collections import namedtuple
+from enum import Enum
 from pathlib import Path
 from typing import Union
-from dataclasses import dataclass
 
 import pandas as pd
 from pipe import traverse, select, sort, where
 import asyncio
 import re
-from enum import Enum
-from city_scraper import Scraper
-from parsing import str_from_tag
+from scraper import Scraper
+from parsing import str_from_tag, parse_shallow_dataframe
 
 config_path = Path.cwd() / 'config' / 'config.json'
 
@@ -20,38 +20,31 @@ HEADER = api_config['headers']
 URL = "https://www.funda.nl/en/koop/{}/p{}"
 
 
-class HouseDetailsShallow(Enum):
-    address = 'Address'
-    postcode = 'PostCode'
-    living_area = 'LivingArea'
-    plot_size = 'PlotSize'
-    price = 'Price'
-    rooms = 'Rooms'
-
-
 def extract_number_of_rooms(soup):
     result = soup.find('ul', class_="search-result-kenmerken").find_all('li')
     if len(result) > 1:
         return result[1]
 
 
-detail_method_map_sh = {HouseDetailsShallow.address: lambda soup: soup.find('h2'),
-                        HouseDetailsShallow.postcode: lambda soup: soup.find('h4'),
-                        HouseDetailsShallow.living_area: lambda soup: soup.find(attrs={'title': 'Living area'}),
-                        HouseDetailsShallow.plot_size: lambda soup: soup.find(attrs={'title': 'Plot size'}),
-                        HouseDetailsShallow.price: lambda soup: soup.find('span', class_='search-result-price'),
-                        HouseDetailsShallow.rooms: extract_number_of_rooms
+HouseAttribute = namedtuple("Attribute", "name type")
+
+AttributesShallow = [('Address', 'text'),
+                     ('PostCode', 'text'),
+                     ('LivingArea', 'numeric'),
+                     ('PlotSize', 'numeric'),
+                     ('Price', 'numeric'),
+                     ('Rooms', 'numeric')
+                     ]
+
+house_shallow = Enum('HouseShallow', {attribute[0]: HouseAttribute(*attribute) for attribute in AttributesShallow})
+
+detail_method_map_sh = {house_shallow.Address: lambda soup: soup.find('h2'),
+                        house_shallow.PostCode: lambda soup: soup.find('h4'),
+                        house_shallow.LivingArea: lambda soup: soup.find(attrs={'title': 'Living area'}),
+                        house_shallow.PlotSize: lambda soup: soup.find(attrs={'title': 'Plot size'}),
+                        house_shallow.Price: lambda soup: soup.find('span', class_='search-result-price'),
+                        house_shallow.Rooms: extract_number_of_rooms
                         }
-
-
-def parse_shallow_dataframe(df: pd.DataFrame) -> pd.DataFrame:
-    for key in [HouseDetailsShallow.price,
-                HouseDetailsShallow.plot_size,
-                HouseDetailsShallow.living_area,
-                HouseDetailsShallow.rooms]:
-        df[key.value] = pd.to_numeric(df[key.value].str.replace('\D+', '', regex=True))
-
-    return df
 
 
 class FundaScraper(Scraper):
@@ -62,7 +55,7 @@ class FundaScraper(Scraper):
         pass
 
     async def _get_number_of_pages_and_listings(self, city='heel-nederland'):
-        soup = await self._get_soup(city, 1)
+        soup = await self._get_soup_main_url(city=city, page=1)
         pp_soup = soup.find("div", class_="pagination-pages")
         num_pages = list(pp_soup
                          | select(lambda x: re.findall('\d+', x.text))
@@ -82,25 +75,33 @@ class FundaScraper(Scraper):
             max_pp, _ = await self._get_number_of_pages_and_listings(city)
             pages = range(1, max_pp + 1)
 
-        soups = await asyncio.gather(*(self._get_soup(city, i) for i in pages))
+        soups = await asyncio.gather(*(self._get_soup_main_url(city, i) for i in pages))
 
         for soup in soups:
             results = self.get_main_page_results(soup)
-            houses = [self.get_house_details(result) for result in results]
+            houses = [self.get_house_details_sh(result) for result in results]
             house_data = house_data + houses
 
-        return parse_shallow_dataframe(pd.DataFrame(house_data))
+        return parse_shallow_dataframe(house_shallow, pd.DataFrame(house_data))
+
+    def scrape_deep(self, city: str, pages: Union[None, list[int]]):
+        pass
+
+    @staticmethod
+    def get_urls_from_main_soup(soup):
+        data = json.loads(soup.find_all('script', type='application/ld+json')[3].text)
+        return [item['url'] for item in data['itemListElement']]
 
     @staticmethod
     def get_main_page_results(soup):
         return soup.find_all('div', class_="search-result-content-inner")
 
     @staticmethod
-    def get_house_details(result):
+    def get_house_details_sh(soup):
         house = {}
 
-        for detail in HouseDetailsShallow:
-            house[detail.value] = str_from_tag(detail_method_map_sh[detail](result))
+        for detail in house_shallow:
+            house[detail.name] = str_from_tag(detail_method_map_sh[detail](soup))
 
         return house
 
