@@ -4,6 +4,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Union
 from time import perf_counter
+from bs4.element import Tag
 
 import pandas as pd
 from pipe import traverse, select, sort, where
@@ -34,7 +35,8 @@ AttributesShallow = [('Address', 'text'),
                      ('LivingArea', 'numeric'),
                      ('PlotSize', 'numeric'),
                      ('Price', 'numeric'),
-                     ('Rooms', 'numeric')
+                     ('Rooms', 'numeric'),
+                     ('href', 'text')
                      ]
 
 house_shallow = Enum('HouseShallow', {attribute[0]: HouseAttribute(*attribute) for attribute in AttributesShallow})
@@ -44,7 +46,8 @@ detail_method_map_sh = {house_shallow.Address: lambda soup: soup.find('h2'),
                         house_shallow.LivingArea: lambda soup: soup.find(attrs={'title': 'Living area'}),
                         house_shallow.PlotSize: lambda soup: soup.find(attrs={'title': 'Plot size'}),
                         house_shallow.Price: lambda soup: soup.find('span', class_='search-result-price'),
-                        house_shallow.Rooms: extract_number_of_rooms
+                        house_shallow.Rooms: extract_number_of_rooms,
+                        house_shallow.href: lambda soup: soup.find(href=True)['href']
                         }
 
 
@@ -75,19 +78,21 @@ class FundaScraper(Scraper):
         return res
 
     async def scrape_shallow_async(self, city='heel-nederland', pages: Union[None, list[int]] = None) -> pd.DataFrame:
-        house_data = []
         if pages is None:
             max_pp, _ = await self._get_number_of_pages_and_listings(city)
             pages = range(1, max_pp + 1)
 
         soups = await asyncio.gather(*(self._get_soup_main_url(city, i) for i in pages))
 
+        house_data = []
         for soup in soups:
             results = self.get_main_page_results(soup)
             houses = [self.get_house_details_sh(result) for result in results]
             house_data = house_data + houses
 
-        return parse_shallow_dataframe(house_shallow, pd.DataFrame(house_data))
+        df = pd.DataFrame(house_data)
+
+        return parse_shallow_dataframe(house_shallow, df)
 
     def scrape_deep(self, city: str, pages: Union[None, list[int]]):
         pass
@@ -106,7 +111,13 @@ class FundaScraper(Scraper):
         house = {}
 
         for detail in house_shallow:
-            house[detail.name] = str_from_tag(detail_method_map_sh[detail](soup))
+
+            retrieved_detail = detail_method_map_sh[detail](soup)
+
+            if isinstance(retrieved_detail, Tag):
+                retrieved_detail = str_from_tag(retrieved_detail)
+
+            house[detail.name] = retrieved_detail
 
         return house
 
@@ -120,4 +131,4 @@ class FundaScraper(Scraper):
 
 if __name__ == '__main__':
     scraper = FundaScraper()
-    results = scraper.scrape_shallow(city='Rotterdam', pages=[1])
+    results = scraper.scrape_shallow(city='Delft', pages=None)

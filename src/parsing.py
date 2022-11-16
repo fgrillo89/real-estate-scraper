@@ -17,6 +17,7 @@ def str_from_tag(tag: Tag, strip=True, **kwargs) -> Union[None, str]:
     """
     if tag is None:
         return None
+
     try:
         text = tag.get_text(strip=strip, **kwargs)
         return text
