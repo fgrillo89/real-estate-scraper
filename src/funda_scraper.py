@@ -3,6 +3,7 @@ from collections import namedtuple
 from enum import Enum
 from pathlib import Path
 from typing import Union
+from time import perf_counter
 
 import pandas as pd
 from pipe import traverse, select, sort, where
@@ -67,7 +68,11 @@ class FundaScraper(Scraper):
         return num_pages, num_listings
 
     def scrape_shallow(self, city='heel-nederland', pages: Union[None, list[int]] = None) -> list:
-        return asyncio.run(self.scrape_shallow_async(city, pages))
+        t0 = perf_counter()
+        res = asyncio.run(self.scrape_shallow_async(city, pages))
+        time_elapsed = round(perf_counter() - t0, 3)
+        print(f"{time_elapsed=} s")
+        return res
 
     async def scrape_shallow_async(self, city='heel-nederland', pages: Union[None, list[int]] = None) -> pd.DataFrame:
         house_data = []
@@ -115,4 +120,4 @@ class FundaScraper(Scraper):
 
 if __name__ == '__main__':
     scraper = FundaScraper()
-    results = scraper.scrape_shallow(city='Delft', pages=None)
+    results = scraper.scrape_shallow(city='Rotterdam', pages=[1])

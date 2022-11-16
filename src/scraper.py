@@ -1,24 +1,18 @@
-import json
-
 from abc import ABC, abstractmethod
-
 from asyncio import Semaphore
-from enum import Enum
-from pathlib import Path
 from typing import Union
 
-from bs4 import BeautifulSoup
-from html_handling import get_html
 from aiolimiter import AsyncLimiter
+from bs4 import BeautifulSoup
 
-
+from html_handling import get_html
 
 
 class Scraper(ABC):
-    def __init__(self, header: dict, main_url: str, max_active_requests=10):
+    def __init__(self, header: dict, main_url: str, max_active_requests=10, requests_per_sec=6):
         self.header = header
         self.main_url = main_url
-        self.limiter = AsyncLimiter(max_active_requests, 3)
+        self.limiter = AsyncLimiter(1, round(1 / requests_per_sec, 3))
         self.semaphore = Semaphore(value=max_active_requests)
 
     def get_url(self, city: str, page: int) -> str:
