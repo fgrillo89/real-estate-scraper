@@ -36,7 +36,8 @@ AttributesShallow = [('Address', 'text'),
                      ('PlotSize', 'numeric'),
                      ('Price', 'numeric'),
                      ('Rooms', 'numeric'),
-                     ('href', 'text')
+                     ('href', 'text'),
+                     ('HouseId', 'text')
                      ]
 
 house_shallow = Enum('HouseShallow', {attribute[0]: HouseAttribute(*attribute) for attribute in AttributesShallow})
@@ -47,7 +48,12 @@ detail_method_map_sh = {house_shallow.Address: lambda soup: soup.find('h2'),
                         house_shallow.PlotSize: lambda soup: soup.find(attrs={'title': 'Plot size'}),
                         house_shallow.Price: lambda soup: soup.find('span', class_='search-result-price'),
                         house_shallow.Rooms: extract_number_of_rooms,
-                        house_shallow.href: lambda soup: soup.find(href=True)['href']
+                        house_shallow.href: lambda soup: soup.find('a', attrs={"data-object-url-tracking"
+                                                                               : "resultlist"})
+                                                             .get('href'),
+                        house_shallow.HouseId: lambda soup: soup.find('a', attrs={"data-object-url-tracking"
+                                                                                  : "resultlist"})
+                                                                .get('data-search-result-item-anchor')
                         }
 
 
@@ -96,11 +102,6 @@ class FundaScraper(Scraper):
 
     def scrape_deep(self, city: str, pages: Union[None, list[int]]):
         pass
-
-    @staticmethod
-    def get_urls_from_main_soup(soup):
-        data = json.loads(soup.find_all('script', type='application/ld+json')[3].text)
-        return [item['url'] for item in data['itemListElement']]
 
     @staticmethod
     def get_main_page_results(soup):
