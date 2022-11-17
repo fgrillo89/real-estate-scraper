@@ -1,18 +1,17 @@
+import asyncio
 import json
-from collections import namedtuple
-from enum import Enum
+import re
 from pathlib import Path
-from typing import Union
 from time import perf_counter
-from bs4.element import Tag
+from typing import Union
 
 import pandas as pd
-from pipe import traverse, select, sort, where
-import asyncio
-import re
-from scraper import Scraper
-from parsing import str_from_tag, parse_shallow_dataframe
+from bs4.element import Tag
+from pipe import traverse, select, sort
+
 from config_loader import config_loader
+from parsing import str_from_tag, parse_shallow_dataframe
+from scraper import Scraper
 
 config_path = Path.cwd() / 'config' / 'config.json'
 config = config_loader(config_path)
@@ -20,7 +19,6 @@ config = config_loader(config_path)
 MAIN_URL = config['website']['main_url']
 CITY_SEARCH_URL = config['website']['city_search_url_template']
 HEADER = config['header']
-
 house_shallow = config['house_attributes_shallow']
 
 
@@ -37,26 +35,30 @@ attribute_func_map_sh = {'Address': lambda soup: soup.find('h2'),
                          'Price': lambda soup: soup.find('span', class_='search-result-price'),
                          'Rooms': extract_number_of_rooms,
                          'href': lambda soup: soup.find('a', attrs={"data-object-url-tracking": "resultlist"})
-                                                  .get('href'),
+                             .get('href'),
                          'HouseId': lambda soup: soup.find('a', attrs={"data-object-url-tracking": "resultlist"})
-                                                     .get('data-search-result-item-anchor')
+                             .get('data-search-result-item-anchor')
                          }
 
 for attr in attribute_func_map_sh:
     house_shallow.map_function_to_attribute(attr, attribute_func_map_sh[attr])
+
 
 class FundaScraper(Scraper):
     def __init__(self, **kwargs):
         super().__init__(header=HEADER,
                          main_url=MAIN_URL,
                          city_search_url=CITY_SEARCH_URL,
+                         default_city='heel-nederland',
                          house_attributes_shallow=house_shallow,
                          **kwargs)
 
     def scrape_city(self, city, max_pp=None, method='shallow'):
         pass
 
-    async def _get_number_of_pages_and_listings(self, city='heel-nederland'):
+    async def _get_number_of_pages_and_listings(self, city=None):
+        if city is None:
+            city=self.default_city
         soup = await self._get_soup_main_url(city=city, page=1)
         pp_soup = soup.find("div", class_="pagination-pages")
         num_pages = list(pp_soup
@@ -68,14 +70,18 @@ class FundaScraper(Scraper):
         num_listings = json.loads(soup.find_all('script', type="application/ld+json")[2].text)['results_total']
         return num_pages, num_listings
 
-    def scrape_shallow(self, city='heel-nederland', pages: Union[None, list[int]] = None) -> list:
+    def scrape_shallow(self, city=None, pages: Union[None, list[int]] = None) -> list:
+        if city is None:
+            city=self.default_city
         t0 = perf_counter()
         res = asyncio.run(self.scrape_shallow_async(city, pages))
         time_elapsed = round(perf_counter() - t0, 3)
         print(f"{time_elapsed=} s")
         return res
 
-    async def scrape_shallow_async(self, city='heel-nederland', pages: Union[None, list[int]] = None) -> pd.DataFrame:
+    async def scrape_shallow_async(self, city=None, pages: Union[None, list[int]] = None) -> pd.DataFrame:
+        if city is None:
+            city=self.default_city
         if pages is None:
             max_pp, _ = await self._get_number_of_pages_and_listings(city)
             pages = range(1, max_pp + 1)
@@ -107,7 +113,6 @@ class FundaScraper(Scraper):
     @staticmethod
     def get_main_page_results(soup):
         return soup.find_all('div', class_="search-result-content-inner")
-
 
     # async def get_all_children_urls(self, ):
     #     max_pp = await get_num_pp_from_main_page(url.format(1))
