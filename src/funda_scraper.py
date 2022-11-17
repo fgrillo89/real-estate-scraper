@@ -17,8 +17,8 @@ from config_loader import config_loader
 config_path = Path.cwd() / 'config' / 'config.json'
 config = config_loader(config_path)
 
-URL = "https://www.funda.nl/en/koop/{}/p{}"
-
+MAIN_URL = config['website']['main_url']
+CITY_SEARCH_URL = config['website']['city_search_url_template']
 HEADER = config['header']
 
 house_shallow = config['house_attributes_shallow']
@@ -36,12 +36,10 @@ attribute_func_map_sh = {'Address': lambda soup: soup.find('h2'),
                          'PlotSize': lambda soup: soup.find(attrs={'title': 'Plot size'}),
                          'Price': lambda soup: soup.find('span', class_='search-result-price'),
                          'Rooms': extract_number_of_rooms,
-                         'href': lambda soup: soup.find('a', attrs={"data-object-url-tracking"
-                                                                    : "resultlist"})
-                             .get('href'),
-                         'HouseId': lambda soup: soup.find('a', attrs={"data-object-url-tracking"
-                                                                       : "resultlist"})
-                             .get('data-search-result-item-anchor')
+                         'href': lambda soup: soup.find('a', attrs={"data-object-url-tracking": "resultlist"})
+                                                  .get('href'),
+                         'HouseId': lambda soup: soup.find('a', attrs={"data-object-url-tracking": "resultlist"})
+                                                     .get('data-search-result-item-anchor')
                          }
 
 for attr in attribute_func_map_sh:
@@ -49,7 +47,11 @@ for attr in attribute_func_map_sh:
 
 class FundaScraper(Scraper):
     def __init__(self, **kwargs):
-        super().__init__(header=HEADER, main_url=URL, **kwargs)
+        super().__init__(header=HEADER,
+                         main_url=MAIN_URL,
+                         city_search_url=CITY_SEARCH_URL,
+                         house_attributes_shallow=house_shallow,
+                         **kwargs)
 
     def scrape_city(self, city, max_pp=None, method='shallow'):
         pass
@@ -88,25 +90,24 @@ class FundaScraper(Scraper):
 
         df = pd.DataFrame(house_data)
 
-        return parse_shallow_dataframe(house_shallow, df)
+        return parse_shallow_dataframe(self.house_attributes_shallow, df)
 
     def scrape_deep(self, city: str, pages: Union[None, list[int]]):
         pass
+
+    def get_house_details_sh(self, soup):
+        house = {}
+        for attribute in self.house_attributes_shallow:
+            retrieved_attribute = attribute.retrieve_func(soup)
+            if isinstance(retrieved_attribute, Tag):
+                retrieved_attribute = str_from_tag(retrieved_attribute)
+            house[attribute.name] = retrieved_attribute
+        return house
 
     @staticmethod
     def get_main_page_results(soup):
         return soup.find_all('div', class_="search-result-content-inner")
 
-    @staticmethod
-    def get_house_details_sh(soup):
-        house = {}
-        for attribute in house_shallow:
-            retrieved_attribute = attribute.retrieve_func(soup)
-            if isinstance(retrieved_attribute, Tag):
-                retrieved_attribute = str_from_tag(retrieved_attribute)
-            house[attribute.name] = retrieved_attribute
-
-        return house
 
     # async def get_all_children_urls(self, ):
     #     max_pp = await get_num_pp_from_main_page(url.format(1))
