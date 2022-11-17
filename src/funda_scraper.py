@@ -12,14 +12,16 @@ import asyncio
 import re
 from scraper import Scraper
 from parsing import str_from_tag, parse_shallow_dataframe
+from config_loader import config_loader
 
 config_path = Path.cwd() / 'config' / 'config.json'
+config = config_loader(config_path)
 
-with open(config_path) as json_file:
-    api_config = json.load(json_file)
-
-HEADER = api_config['headers']
 URL = "https://www.funda.nl/en/koop/{}/p{}"
+
+HEADER = config['header']
+
+house_shallow = config['house_attributes_shallow']
 
 
 def extract_number_of_rooms(soup):
@@ -28,34 +30,22 @@ def extract_number_of_rooms(soup):
         return result[1]
 
 
-HouseAttribute = namedtuple("Attribute", "name type")
+attribute_func_map_sh = {'Address': lambda soup: soup.find('h2'),
+                         'PostCode': lambda soup: soup.find('h4'),
+                         'LivingArea': lambda soup: soup.find(attrs={'title': 'Living area'}),
+                         'PlotSize': lambda soup: soup.find(attrs={'title': 'Plot size'}),
+                         'Price': lambda soup: soup.find('span', class_='search-result-price'),
+                         'Rooms': extract_number_of_rooms,
+                         'href': lambda soup: soup.find('a', attrs={"data-object-url-tracking"
+                                                                    : "resultlist"})
+                             .get('href'),
+                         'HouseId': lambda soup: soup.find('a', attrs={"data-object-url-tracking"
+                                                                       : "resultlist"})
+                             .get('data-search-result-item-anchor')
+                         }
 
-AttributesShallow = [('Address', 'text'),
-                     ('PostCode', 'text'),
-                     ('LivingArea', 'numeric'),
-                     ('PlotSize', 'numeric'),
-                     ('Price', 'numeric'),
-                     ('Rooms', 'numeric'),
-                     ('href', 'text'),
-                     ('HouseId', 'text')
-                     ]
-
-house_shallow = Enum('HouseShallow', {attribute[0]: HouseAttribute(*attribute) for attribute in AttributesShallow})
-
-detail_method_map_sh = {house_shallow.Address: lambda soup: soup.find('h2'),
-                        house_shallow.PostCode: lambda soup: soup.find('h4'),
-                        house_shallow.LivingArea: lambda soup: soup.find(attrs={'title': 'Living area'}),
-                        house_shallow.PlotSize: lambda soup: soup.find(attrs={'title': 'Plot size'}),
-                        house_shallow.Price: lambda soup: soup.find('span', class_='search-result-price'),
-                        house_shallow.Rooms: extract_number_of_rooms,
-                        house_shallow.href: lambda soup: soup.find('a', attrs={"data-object-url-tracking"
-                                                                               : "resultlist"})
-                                                             .get('href'),
-                        house_shallow.HouseId: lambda soup: soup.find('a', attrs={"data-object-url-tracking"
-                                                                                  : "resultlist"})
-                                                                .get('data-search-result-item-anchor')
-                        }
-
+for attr in attribute_func_map_sh:
+    house_shallow.map_function_to_attribute(attr, attribute_func_map_sh[attr])
 
 class FundaScraper(Scraper):
     def __init__(self, **kwargs):
@@ -110,15 +100,11 @@ class FundaScraper(Scraper):
     @staticmethod
     def get_house_details_sh(soup):
         house = {}
-
-        for detail in house_shallow:
-
-            retrieved_detail = detail_method_map_sh[detail](soup)
-
-            if isinstance(retrieved_detail, Tag):
-                retrieved_detail = str_from_tag(retrieved_detail)
-
-            house[detail.name] = retrieved_detail
+        for attribute in house_shallow:
+            retrieved_attribute = attribute.retrieve_func(soup)
+            if isinstance(retrieved_attribute, Tag):
+                retrieved_attribute = str_from_tag(retrieved_attribute)
+            house[attribute.name] = retrieved_attribute
 
         return house
 
@@ -132,4 +118,4 @@ class FundaScraper(Scraper):
 
 if __name__ == '__main__':
     scraper = FundaScraper()
-    results = scraper.scrape_shallow(city='Delft', pages=None)
+    results = scraper.scrape_shallow(city='Delft', pages=[1, 2])

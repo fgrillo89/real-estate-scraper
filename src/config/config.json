@@ -1,5 +1,5 @@
 {
-  "headers": {
+  "header": {
     "authority": "www.funda.nl",
     "accept": "*/*",
     "accept-language": "en-US,en;q=0.9,nl;q=0.8,it;q=0.7",
@@ -14,5 +14,33 @@
     "sec-fetch-site": "same-origin",
     "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36",
     "x-requested-with": "XMLHttpRequest"
-  }
+  },
+  "website": {
+    "main_url": "https://www.funda.nl",
+    "city_search_url_template": "https://www.funda.nl/koop/{city}/p{page}"
+  },
+  "house_attributes_shallow": [
+    {"name":  "Address",
+      "type": "text"},
+    {"name":  "PostCode",
+      "type": "text"},
+    {"name":  "LivingArea",
+      "type": "numeric"},
+    {"name":  "PlotSize",
+      "type": "numeric"},
+    {"name":  "Price",
+      "type": "numeric"},
+    {"name":  "Rooms",
+      "type": "numeric"},
+    {"name":  "href",
+      "type": "text"},
+    {"name":  "HouseId",
+      "type": "numeric"}
+  ],
+  "search_results_attributes": [
+    {"name": "max_num_pages",
+      "type": "numeric"},
+    {"name": "listings",
+      "type": "numeric"}
+  ]
 }

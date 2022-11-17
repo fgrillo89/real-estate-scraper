@@ -5,6 +5,7 @@ from bs4.element import Tag
 from typing import Union
 import re
 
+from src.config_loader import AttributesEnum
 
 
 def str_from_tag(tag: Tag, strip=True, **kwargs) -> Union[None, str]:
@@ -25,12 +26,11 @@ def str_from_tag(tag: Tag, strip=True, **kwargs) -> Union[None, str]:
         print(e)
 
 
-def parse_shallow_dataframe(house_shallow: Enum, df: pd.DataFrame) -> pd.DataFrame:
+def parse_shallow_dataframe(house_shallow: AttributesEnum, df: pd.DataFrame) -> pd.DataFrame:
     for attribute in house_shallow:
-        if attribute.value.type == 'numeric':
+        if attribute.type == 'numeric':
             df[attribute.name] = pd.to_numeric(df[attribute.name].str.replace('\D+', '', regex=True))
     return df
-
 
 #
 

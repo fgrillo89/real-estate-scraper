@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 from asyncio import Semaphore
+from collections import namedtuple
+from enum import Enum
 from typing import Union
 
 from aiolimiter import AsyncLimiter
@@ -8,8 +10,13 @@ from bs4 import BeautifulSoup
 from html_handling import get_html
 
 
+
 class Scraper(ABC):
-    def __init__(self, header: dict, main_url: str, max_active_requests=10, requests_per_sec=6):
+    def __init__(self,
+                 header: dict,
+                 main_url: str,
+                 max_active_requests=10,
+                 requests_per_sec=6):
         self.header = header
         self.main_url = main_url
         self.limiter = AsyncLimiter(1, round(1 / requests_per_sec, 3))
