@@ -20,6 +20,7 @@ MAIN_URL = config['website']['main_url']
 CITY_SEARCH_URL = config['website']['city_search_url_template']
 HEADER = config['header']
 house_shallow = config['house_attributes_shallow']
+search_results_attrs = config['search_results_attributes']
 
 
 def extract_number_of_rooms(soup):
@@ -44,6 +45,30 @@ for attr in attribute_func_map_sh:
     house_shallow.map_function_to_attribute(attr, attribute_func_map_sh[attr])
 
 
+def get_max_num_pages(soup):
+    pp_soup = soup.find("div", class_="pagination-pages")
+    num_pages = list(pp_soup
+                     | select(lambda x: re.findall('\d+', x.text))
+                     | traverse
+                     | select(lambda x: int(x))
+                     | sort(reverse=True)
+                     )[0]
+    return num_pages
+
+
+def get_num_listings(soup):
+    listings_results = soup.find_all('script', type="application/ld+json")[2].text
+    return json.loads(listings_results)['results_total']
+
+search_results_func_map = {'max_num_pages': get_max_num_pages,
+                           'num_listings': get_num_listings,
+                           'listings': lambda soup: soup.find_all('div', class_="search-result-content-inner")
+                           }
+
+for attr in search_results_func_map:
+    search_results_attrs.map_function_to_attribute(attr, search_results_func_map[attr])
+
+
 class FundaScraper(Scraper):
     def __init__(self, **kwargs):
         super().__init__(header=HEADER,
@@ -51,6 +76,7 @@ class FundaScraper(Scraper):
                          city_search_url=CITY_SEARCH_URL,
                          default_city='heel-nederland',
                          house_attributes_shallow=house_shallow,
+                         search_results_attributes=search_results_attrs,
                          **kwargs)
 
     def scrape_city(self, city, max_pp=None, method='shallow'):
@@ -58,21 +84,15 @@ class FundaScraper(Scraper):
 
     async def _get_number_of_pages_and_listings(self, city=None):
         if city is None:
-            city=self.default_city
+            city = self.default_city
         soup = await self._get_soup_main_url(city=city, page=1)
-        pp_soup = soup.find("div", class_="pagination-pages")
-        num_pages = list(pp_soup
-                         | select(lambda x: re.findall('\d+', x.text))
-                         | traverse
-                         | select(lambda x: int(x))
-                         | sort(reverse=True)
-                         )[0]
-        num_listings = json.loads(soup.find_all('script', type="application/ld+json")[2].text)['results_total']
+        num_pages = self.search_results_attributes['max_num_pages'].retrieve_func(soup)
+        num_listings = self.search_results_attributes['num_listings'].retrieve_func(soup)
         return num_pages, num_listings
 
     def scrape_shallow(self, city=None, pages: Union[None, list[int]] = None) -> list:
         if city is None:
-            city=self.default_city
+            city = self.default_city
         t0 = perf_counter()
         res = asyncio.run(self.scrape_shallow_async(city, pages))
         time_elapsed = round(perf_counter() - t0, 3)
@@ -81,7 +101,8 @@ class FundaScraper(Scraper):
 
     async def scrape_shallow_async(self, city=None, pages: Union[None, list[int]] = None) -> pd.DataFrame:
         if city is None:
-            city=self.default_city
+            city = self.default_city
+
         if pages is None:
             max_pp, _ = await self._get_number_of_pages_and_listings(city)
             pages = range(1, max_pp + 1)
@@ -90,7 +111,7 @@ class FundaScraper(Scraper):
 
         house_data = []
         for soup in soups:
-            results = self.get_main_page_results(soup)
+            results = self.search_results_attributes['listings'].retrieve_func(soup)
             houses = [self.get_house_details_sh(result) for result in results]
             house_data = house_data + houses
 
@@ -109,10 +130,6 @@ class FundaScraper(Scraper):
                 retrieved_attribute = str_from_tag(retrieved_attribute)
             house[attribute.name] = retrieved_attribute
         return house
-
-    @staticmethod
-    def get_main_page_results(soup):
-        return soup.find_all('div', class_="search-result-content-inner")
 
     # async def get_all_children_urls(self, ):
     #     max_pp = await get_num_pp_from_main_page(url.format(1))

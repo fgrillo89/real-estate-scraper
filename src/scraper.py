@@ -18,6 +18,7 @@ class Scraper(ABC):
                  city_search_url: str,
                  default_city: str,
                  house_attributes_shallow: AttributesEnum,
+                 search_results_attributes: AttributesEnum,
                  max_active_requests=10,
                  requests_per_sec=6):
         self.header = header
@@ -25,6 +26,7 @@ class Scraper(ABC):
         self.city_search_url = city_search_url
         self.default_city = default_city
         self.house_attributes_shallow = house_attributes_shallow
+        self.search_results_attributes = search_results_attributes
         self.semaphore = Semaphore(value=max_active_requests)
         self.limiter = AsyncLimiter(1, round(1 / requests_per_sec, 3))
 

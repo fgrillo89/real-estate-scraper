@@ -40,7 +40,9 @@
   "search_results_attributes": [
     {"name": "max_num_pages",
       "type": "numeric"},
-    {"name": "listings",
-      "type": "numeric"}
+    {"name": "num_listings",
+      "type": "numeric"},
+    {"name":  "listings",
+    "type":  "text"}
   ]
 }
