@@ -79,8 +79,10 @@ class FundaScraper(Scraper):
                          search_results_attributes=search_results_attrs,
                          **kwargs)
 
-    def scrape_city(self, city, max_pp=None, method='shallow'):
-        pass
+    def scrape_city(self, city, pages: Union[None, list[int]] = None, method='shallow'):
+        method_map = {'shallow': self.scrape_shallow}
+        func = method_map[method]
+        return func(city, pages)
 
     async def _get_number_of_pages_and_listings(self, city=None):
         if city is None:
@@ -90,16 +92,7 @@ class FundaScraper(Scraper):
         num_listings = self.search_results_attributes['num_listings'].retrieve_func(soup)
         return num_pages, num_listings
 
-    def scrape_shallow(self, city=None, pages: Union[None, list[int]] = None) -> list:
-        if city is None:
-            city = self.default_city
-        t0 = perf_counter()
-        res = asyncio.run(self.scrape_shallow_async(city, pages))
-        time_elapsed = round(perf_counter() - t0, 3)
-        print(f"{time_elapsed=} s")
-        return res
-
-    async def scrape_shallow_async(self, city=None, pages: Union[None, list[int]] = None) -> pd.DataFrame:
+    async def get_city_soups(self, city=None, pages: Union[None, list[int]] = None):
         if city is None:
             city = self.default_city
 
@@ -108,6 +101,11 @@ class FundaScraper(Scraper):
             pages = range(1, max_pp + 1)
 
         soups = await asyncio.gather(*(self._get_soup_main_url(city, i) for i in pages))
+        return soups
+
+    def scrape_shallow(self, city=None, pages: Union[None, list[int]] = None) -> pd.DataFrame:
+        t0 = perf_counter()
+        soups = asyncio.run(self.get_city_soups(city=city, pages=pages))
 
         house_data = []
         for soup in soups:
@@ -116,8 +114,10 @@ class FundaScraper(Scraper):
             house_data = house_data + houses
 
         df = pd.DataFrame(house_data)
-
-        return parse_shallow_dataframe(self.house_attributes_shallow, df)
+        parsed_df = parse_shallow_dataframe(self.house_attributes_shallow, df)
+        time_elapsed = round(perf_counter() - t0, 3)
+        print(f"{time_elapsed=} s")
+        return parsed_df
 
     def scrape_deep(self, city: str, pages: Union[None, list[int]]):
         pass
