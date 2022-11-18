@@ -9,7 +9,7 @@ import pandas as pd
 from bs4.element import Tag
 from pipe import traverse, select, sort
 
-from config_loader import config_loader
+from config_loader import config_loader, AttributesEnum
 from parsing import str_from_tag, parse_shallow_dataframe
 from scraper import Scraper
 
@@ -110,7 +110,7 @@ class FundaScraper(Scraper):
         house_data = []
         for soup in soups:
             results = self.search_results_attributes['listings'].retrieve_func(soup)
-            houses = [self.get_house_details_sh(result) for result in results]
+            houses = [self.get_house_attributes(result, self.house_attributes_shallow) for result in results]
             house_data = house_data + houses
 
         df = pd.DataFrame(house_data)
@@ -122,9 +122,10 @@ class FundaScraper(Scraper):
     def scrape_deep(self, city: str, pages: Union[None, list[int]]):
         pass
 
-    def get_house_details_sh(self, soup):
+    @staticmethod
+    def get_house_attributes(soup, attributes_enum: AttributesEnum):
         house = {}
-        for attribute in self.house_attributes_shallow:
+        for attribute in attributes_enum:
             retrieved_attribute = attribute.retrieve_func(soup)
             if isinstance(retrieved_attribute, Tag):
                 retrieved_attribute = str_from_tag(retrieved_attribute)
