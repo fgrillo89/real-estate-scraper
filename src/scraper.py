@@ -42,7 +42,7 @@ class Scraper(ABC):
         self.semaphore.release()
         return BeautifulSoup(html, 'lxml')
 
-    async def _get_soup_main_url(self, city: str, page: int) -> BeautifulSoup:
+    async def _get_soup_city(self, city: str, page: int) -> BeautifulSoup:
         url = self.get_city_url(city, page)
         return await self._get_soup(url=url)
 

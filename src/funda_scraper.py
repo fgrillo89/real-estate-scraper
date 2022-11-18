@@ -84,10 +84,10 @@ class FundaScraper(Scraper):
         func = method_map[method]
         return func(city, pages)
 
-    async def _get_number_of_pages_and_listings(self, city=None):
+    def get_num_pages_and_listings(self, city=None):
         if city is None:
             city = self.default_city
-        soup = await self._get_soup_main_url(city=city, page=1)
+        soup = asyncio.run(self._get_soup_city(city=city, page=1))
         num_pages = self.search_results_attributes['max_num_pages'].retrieve_func(soup)
         num_listings = self.search_results_attributes['num_listings'].retrieve_func(soup)
         return num_pages, num_listings
@@ -97,10 +97,10 @@ class FundaScraper(Scraper):
             city = self.default_city
 
         if pages is None:
-            max_pp, _ = await self._get_number_of_pages_and_listings(city)
+            max_pp, _ = self.get_num_pages_and_listings(city)
             pages = range(1, max_pp + 1)
 
-        soups = await asyncio.gather(*(self._get_soup_main_url(city, i) for i in pages))
+        soups = await asyncio.gather(*(self._get_soup_city(city, i) for i in pages))
         return soups
 
     def scrape_shallow(self, city=None, pages: Union[None, list[int]] = None) -> pd.DataFrame:
@@ -122,8 +122,11 @@ class FundaScraper(Scraper):
     def scrape_deep(self, city: str, pages: Union[None, list[int]]):
         pass
 
+    def from_href_to_url(self, href: str) -> str:
+        return self.main_url + href
+
     @staticmethod
-    def get_house_attributes(soup, attributes_enum: AttributesEnum):
+    def get_house_attributes(soup, attributes_enum: AttributesEnum) -> dict:
         house = {}
         for attribute in attributes_enum:
             retrieved_attribute = attribute.retrieve_func(soup)
