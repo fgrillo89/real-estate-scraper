@@ -170,9 +170,9 @@ class FundaScraper(Scraper):
 
         houses = [self.get_house_attributes(soup, self.house_attributes_deep) for _, soup in soups_ids]
 
-        df = pd.DataFrame(houses)
-        df['Id'] = [id for id, _ in soups_ids]
-        parsed_df = parse_dataframe(self.house_attributes_deep, df)
+        df_deep = pd.DataFrame(houses)
+        df_deep['Id'] = [id for id, _ in soups_ids]
+        parsed_df = parse_dataframe(self.house_attributes_deep, df_deep)
         return df_shallow.merge(parsed_df, on='Id')
 
     def from_href_to_url(self, href: str) -> str:
