@@ -48,8 +48,8 @@ for attr in house_attrs_sh_func_map:
     house_shallow.map_func_to_attr(attr, house_attrs_sh_func_map[attr])
 
 
-def get_attribute_deep(soup, attribute_name):
-    dt = soup.find(lambda tag: tag.name == 'dt' and attribute_name.lower() in tag.text.lower())
+def get_attribute_deep(soup, text_in_website):
+    dt = soup.find(lambda tag: tag.name == 'dt' and text_in_website.lower() in tag.text.lower())
     if dt:
         return list(dt.find_next("dd").stripped_strings)[0]
     else:
@@ -58,7 +58,7 @@ def get_attribute_deep(soup, attribute_name):
 
 for attr in house_deep:
     if attr.name not in ['Description', 'Neighbourhood']:
-        func = partial(get_attribute_deep, attribute_name=attr.name)
+        func = partial(get_attribute_deep, text_in_website=attr.text_in_website)
         house_deep.map_func_to_attr(attr.name, func)
 
 get_neighbourhood = lambda soup: soup.find("span", class_="object-header__subtitle")

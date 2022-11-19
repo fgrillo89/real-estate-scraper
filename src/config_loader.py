@@ -8,10 +8,11 @@ ATTRIBUTES_CONFIG_TYPES = ["house_attributes_shallow",
                            "house_attributes_deep"]
 
 
-@dataclass
+@dataclass(slots=True)
 class Attribute:
     name: str
     type: str
+    text_in_website: str = field(default=None, repr=False)
     retrieve_func: Callable = field(default=None, repr=False)
 
 
@@ -20,8 +21,10 @@ class AttributesEnum:
         self._attributes = []
         for attr in attrs:
             if attr["type"] not in ['text', 'numeric']:
-                raise ValueError(f"{attr['type']} is not a valid type. Allowed types: 'numeric' or 'text'")
-            setattr(self, attr['name'], Attribute(attr['name'], attr['type']))
+                raise TypeError(f"{attr['type']} is not a valid type. Allowed types: 'numeric' or 'text'")
+            setattr(self, attr['name'], Attribute(name=attr['name'],
+                                                  type=attr['type'],
+                                                  text_in_website=attr.get("text_in_website")))
             self._attributes.append(attr['name'])
 
     def map_func_to_attr(self, item: str, func: Callable):
@@ -36,7 +39,7 @@ class AttributesEnum:
                 yield self.__dict__[key]
 
     def __repr__(self):
-        return f"AttributesEnum(items={[a.name for a in self]})"
+        return f"AttributesEnum(items={[attr.name for attr in self]})"
 
 
 def config_loader(config_path):
