@@ -4,6 +4,7 @@ import re
 from pathlib import Path
 from time import perf_counter
 from typing import Union
+from functools import partial
 
 import pandas as pd
 from bs4.element import Tag
@@ -20,6 +21,7 @@ MAIN_URL = config['website']['main_url']
 CITY_SEARCH_URL = config['website']['city_search_url_template']
 HEADER = config['header']
 house_shallow = config['house_attributes_shallow']
+house_deep = config["house_attributes_deep"]
 search_results_attrs = config['search_results_attributes']
 
 
@@ -29,20 +31,40 @@ def extract_number_of_rooms(soup):
         return result[1]
 
 
-attribute_func_map_sh = {'Address': lambda soup: soup.find('h2'),
-                         'PostCode': lambda soup: soup.find('h4'),
-                         'LivingArea': lambda soup: soup.find(attrs={'title': 'Living area'}),
-                         'PlotSize': lambda soup: soup.find(attrs={'title': 'Plot size'}),
-                         'Price': lambda soup: soup.find('span', class_='search-result-price'),
-                         'Rooms': extract_number_of_rooms,
-                         'href': lambda soup: soup.find('a', attrs={"data-object-url-tracking": "resultlist"})
-                             .get('href'),
-                         'HouseId': lambda soup: soup.find('a', attrs={"data-object-url-tracking": "resultlist"})
-                             .get('data-search-result-item-anchor')
-                         }
+house_attrs_sh_func_map = {'Address': lambda soup: soup.find('h2'),
+                           'PostCode': lambda soup: soup.find('h4'),
+                           'LivingArea': lambda soup: soup.find(attrs={'title': 'Living area'}),
+                           'PlotSize': lambda soup: soup.find(attrs={'title': 'Plot size'}),
+                           'Price': lambda soup: soup.find('span', class_='search-result-price'),
+                           'Rooms': extract_number_of_rooms,
+                           'href': lambda soup: soup.find('a', attrs={"data-object-url-tracking": "resultlist"})
+                               .get('href'),
+                           'HouseId': lambda soup: soup.find('a', attrs={"data-object-url-tracking": "resultlist"})
+                               .get('data-search-result-item-anchor')
+                           }
 
-for attr in attribute_func_map_sh:
-    house_shallow.map_function_to_attribute(attr, attribute_func_map_sh[attr])
+for attr in house_attrs_sh_func_map:
+    house_shallow.map_func_to_attr(attr, house_attrs_sh_func_map[attr])
+
+
+def get_attribute_deep(soup, attribute_name):
+    dt = soup.find(lambda tag: tag.name == 'dt' and attribute_name in tag.text)
+    if dt:
+        return list(dt.find_next("dd").stripped_strings)[0]
+    else:
+        return None
+
+
+for attr in house_deep:
+    if attr.name not in ['Description', 'Neighbourhood']:
+        func = partial(get_attribute_deep, attribute_name=attr.name)
+        house_deep.map_func_to_attr(attr.name, func)
+
+get_neighbourhood = lambda soup: soup.find("span", class_="object-header__subtitle")
+get_description= lambda soup: soup.find("div", class_="object-description-body")
+
+house_deep.Neighbourhood.retrieve_func = get_neighbourhood
+house_deep.Description.retrieve_func = get_description
 
 
 def get_max_num_pages(soup):
@@ -60,13 +82,14 @@ def get_num_listings(soup):
     listings_results = soup.find_all('script', type="application/ld+json")[2].text
     return json.loads(listings_results)['results_total']
 
+
 search_results_func_map = {'max_num_pages': get_max_num_pages,
                            'num_listings': get_num_listings,
                            'listings': lambda soup: soup.find_all('div', class_="search-result-content-inner")
                            }
 
 for attr in search_results_func_map:
-    search_results_attrs.map_function_to_attribute(attr, search_results_func_map[attr])
+    search_results_attrs.map_func_to_attr(attr, search_results_func_map[attr])
 
 
 class FundaScraper(Scraper):

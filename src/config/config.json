@@ -6,7 +6,7 @@
     "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
     "origin": "https://www.funda.nl",
     "referer": "https://www.funda.nl/koop/rotterdam/",
-    "sec-ch-ua": "'Chromium';v='106', 'Google Chrome';v='106', 'Not;A=Brand';v='99'",
+    "sec-ch-ua": "Chromium';v='106', 'Google Chrome';v='106', 'Not;A=Brand';v='99'",
     "sec-ch-ua-mobile": "?0",
     "sec-ch-ua-platform": "Windows",
     "sec-fetch-dest": "empty",
@@ -16,9 +16,17 @@
     "x-requested-with": "XMLHttpRequest"
   },
   "website": {
-    "main_url": "https://www.funda.nl",
+    "main_url": "https://www.funda.nl/en",
     "city_search_url_template": "https://www.funda.nl/koop/{city}/p{page}"
   },
+  "search_results_attributes": [
+    {"name": "max_num_pages",
+      "type": "numeric"},
+    {"name": "num_listings",
+      "type": "numeric"},
+    {"name":  "listings",
+    "type":  "text"}
+  ],
   "house_attributes_shallow": [
     {"name":  "Address",
       "type": "text"},
@@ -36,13 +44,39 @@
       "type": "text"},
     {"name":  "HouseId",
       "type": "numeric"}
-  ],
-  "search_results_attributes": [
-    {"name": "max_num_pages",
-      "type": "numeric"},
-    {"name": "num_listings",
-      "type": "numeric"},
-    {"name":  "listings",
-    "type":  "text"}
-  ]
+    ],
+  "house_attributes_deep": [
+    {"name": "Asking price", "type": "numeric"},
+    {"name": "Asking price per m", "type": "numeric"},
+    {"name": "Listed since", "type": "text"},
+    {"name": "Status", "type": "text"},
+    {"name": "Acceptance", "type": "text"},
+    {"name": "Kind of house", "type": "text"},
+    {"name": "Building type", "type": "text"},
+    {"name": "Year of construction", "type": "numeric"},
+    {"name": "Type of roof", "type": "text"},
+    {"name": "Living area", "type": "numeric"},
+    {"name": "Other space inside the building", "type": "text"},
+    {"name": "Exterior space attached to the building", "type": "text"},
+    {"name": "External storage space", "type": "text"},
+    {"name": "Plot size", "type": "numeric"},
+    {"name": "Volume in cubic meters", "type": "numeric"},
+    {"name": "Number of rooms", "type": "numeric"},
+    {"name": "Number of bath rooms", "type": "numeric"},
+    {"name": "Bathroom facilities", "type": "text"},
+    {"name": "Number of stories", "type": "numeric"},
+    {"name": "Facilities", "type": "text"},
+    {"name": "Energy label", "type": "text"},
+    {"name": "Insulation", "type": "text"},
+    {"name": "Heating", "type": "text"},
+    {"name": "Hot water", "type": "text"},
+    {"name": "Ownership situation", "type": "text"},
+    {"name": "Location", "type": "text"},
+    {"name": "Garden", "type": "text"},
+    {"name": "Back garden", "type": "text"},
+    {"name": "Shed / storage", "type": "text"},
+    {"name": "Type of parking facilities", "type": "text"},
+    {"name": "Neighbourhood", "type": "text"},
+    {"name": "Description", "type": "text"}
+    ]
 }
