@@ -1,14 +1,12 @@
 import asyncio
 import json
 import re
-from pathlib import Path
-from time import perf_counter
-from typing import Union
 from functools import partial
+from pathlib import Path
+from typing import Union
 
 import pandas as pd
 from bs4.element import Tag
-from bs4 import BeautifulSoup
 from pipe import traverse, select, sort
 
 from config_loader import config_loader, AttributesEnum
@@ -25,6 +23,8 @@ HEADER = config['header']
 house_shallow = config['house_attributes_shallow']
 house_deep = config["house_attributes_deep"]
 search_results_attrs = config['search_results_attributes']
+
+DEBUG = True
 
 
 def extract_number_of_rooms(soup):
@@ -130,12 +130,12 @@ class FundaScraper(Scraper):
         soups = await asyncio.gather(*(self._get_soup_city(city, i) for i in pages))
         return soups
 
-    @func_timer
+    @func_timer(debug=DEBUG)
     def scrape_shallow(self, city: str, pages: Union[None, list[int]] = None):
         df = asyncio.run(self.scrape_shallow_async(city, pages))
         return df
 
-    @func_timer
+    @func_timer(debug=DEBUG)
     def scrape_deep(self, city: str, pages: Union[None, list[int]] = None):
         df = asyncio.run(self.scrape_deep_async(city, pages))
         return df
@@ -157,7 +157,7 @@ class FundaScraper(Scraper):
 
     async def scrape_deep_async(self, city: str, pages: Union[None, list[int]]):
         df_shallow = await self.scrape_shallow_async(city, pages)
-        urls =df_shallow.url.values
+        urls = df_shallow.url.values
         ids = df_shallow.Id.values
 
         async def get_soup(id, url):
@@ -181,7 +181,7 @@ class FundaScraper(Scraper):
         return df.href.transform(lambda x: x.split('/')[3])
 
     @staticmethod
-    @func_timer
+    @func_timer(debug=DEBUG)
     def get_house_attributes(soup, attributes_enum: AttributesEnum) -> dict:
         house = {}
         for attribute in attributes_enum:
@@ -190,6 +190,7 @@ class FundaScraper(Scraper):
                 retrieved_attribute = str_from_tag(retrieved_attribute)
             house[attribute.name] = retrieved_attribute
         return house
+
 
 if __name__ == '__main__':
     scraper = FundaScraper()
