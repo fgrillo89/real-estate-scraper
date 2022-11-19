@@ -2,6 +2,7 @@ import asyncio
 import json
 import re
 from functools import partial
+from itertools import chain
 from pathlib import Path
 from typing import Union
 
@@ -140,14 +141,24 @@ class FundaScraper(Scraper):
         df = asyncio.run(self.scrape_deep_async(city, pages))
         return df
 
-    async def scrape_shallow_async(self, city=None, pages: Union[None, list[int]] = None) -> pd.DataFrame:
-        soups = await self.get_city_soups(city=city, pages=pages)
+    async def get_houses_from_page_shallow(self, city=None, page: int = 1) -> list[dict]:
+        soup = await self._get_soup_city(city=city, page=page)
+        listings = self.search_results_attributes['listings'].retrieve_func(soup)
+        houses = [self.get_house_attributes(listing, self.house_attributes_shallow) for listing in listings]
+        return houses
 
-        house_data = []
-        for soup in soups:
-            results = self.search_results_attributes['listings'].retrieve_func(soup)
-            houses = [self.get_house_attributes(result, self.house_attributes_shallow) for result in results]
-            house_data = house_data + houses
+
+    async def scrape_shallow_async(self, city=None, pages: Union[None, list[int]] = None) -> pd.DataFrame:
+        if city is None:
+            city = self.default_city
+
+        if pages is None:
+            max_pp, _ = await self.get_num_pages_and_listings(city)
+            pages = range(1, max_pp + 1)
+
+        houses = await asyncio.gather(*(self.get_houses_from_page_shallow(city, i) for i in pages))
+
+        house_data = list(chain(*houses))
 
         df_shallow = pd.DataFrame(house_data)
         parsed_df = parse_dataframe(self.house_attributes_shallow, df_shallow)
@@ -155,21 +166,21 @@ class FundaScraper(Scraper):
         parsed_df['url'] = parsed_df.href.transform(lambda x: self.main_url + x).values
         return parsed_df
 
+    async def get_house_from_url_deep(self, url, id) -> dict:
+        soup = await self._get_soup(url)
+        house = self.get_house_attributes(soup, self.house_attributes_deep)
+        house['Id'] = id
+        return house
+
     async def scrape_deep_async(self, city: str, pages: Union[None, list[int]]):
         df_shallow = await self.scrape_shallow_async(city, pages)
         urls = df_shallow.url.values
         ids = df_shallow.Id.values
 
-        async def get_soup(id, url):
-            soup = await self._get_soup(url)
-            return id, soup
-
-        soups_ids = await asyncio.gather(*(get_soup(id, url) for id, url in zip(ids, urls)))
-
-        houses = [self.get_house_attributes(soup, self.house_attributes_deep) for _, soup in soups_ids]
+        houses = await asyncio.gather(*(self.get_house_from_url_deep(url, id) for url, id in zip(urls, ids)))
 
         df_deep = pd.DataFrame(houses)
-        df_deep['Id'] = [id for id, _ in soups_ids]
+
         parsed_df = parse_dataframe(self.house_attributes_deep, df_deep)
         return df_shallow.merge(parsed_df, on='Id')
 
@@ -178,10 +189,10 @@ class FundaScraper(Scraper):
 
     @staticmethod
     def id_from_df(df):
-        return df.href.transform(lambda x: x.split('/')[3])
+        return df.href.transform(lambda x: x.split('/')[4])
 
     @staticmethod
-    @func_timer(debug=DEBUG)
+    # @func_timer(debug=DEBUG)
     def get_house_attributes(soup, attributes_enum: AttributesEnum) -> dict:
         house = {}
         for attribute in attributes_enum:
@@ -189,6 +200,8 @@ class FundaScraper(Scraper):
             if isinstance(retrieved_attribute, Tag):
                 retrieved_attribute = str_from_tag(retrieved_attribute)
             house[attribute.name] = retrieved_attribute
+        if all([value is None for value in house.values()]):
+            print("No details found")
         return house
 
 

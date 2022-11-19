@@ -16,8 +16,8 @@
     "x-requested-with": "XMLHttpRequest"
   },
   "website": {
-    "main_url": "https://www.funda.nl/en",
-    "city_search_url_template": "https://www.funda.nl/koop/{city}/p{page}"
+    "main_url": "https://www.funda.nl",
+    "city_search_url_template": "https://www.funda.nl/en/koop/{city}/p{page}"
   },
   "search_results_attributes": [
     {"name": "max_num_pages",
