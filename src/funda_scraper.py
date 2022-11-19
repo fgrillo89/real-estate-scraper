@@ -154,12 +154,13 @@ class FundaScraper(Scraper):
 
         df = pd.DataFrame(house_data)
         parsed_df = parse_dataframe(self.house_attributes_shallow, df)
+        parsed_df['Id'] = self.id_from_df(parsed_df)
         return parsed_df
 
     async def scrape_deep_async(self, city: str, pages: Union[None, list[int]]):
         df_shallow = await self.scrape_shallow_async(city, pages)
         urls = df_shallow.href.transform(lambda x: self.main_url + x).values
-        ids = df_shallow.HouseId.values
+        ids = df_shallow.Id.values
 
         async def get_soup(id, url):
             soup = await self._get_soup(url)
@@ -170,12 +171,16 @@ class FundaScraper(Scraper):
         houses = [self.get_house_attributes(soup, self.house_attributes_deep) for _, soup in soups_ids]
 
         df = pd.DataFrame(houses)
-        df['HouseId'] = [id for id, _ in soups_ids]
+        df['Id'] = [id for id, _ in soups_ids]
         parsed_df = parse_dataframe(self.house_attributes_deep, df)
-        return df_shallow.merge(parsed_df, on='HouseId')
+        return df_shallow.merge(parsed_df, on='Id')
 
     def from_href_to_url(self, href: str) -> str:
         return self.main_url + href
+
+    @staticmethod
+    def id_from_df(df):
+        return df.href.transform(lambda x: x.split('/')[3])
 
     @staticmethod
     def get_house_attributes(soup, attributes_enum: AttributesEnum) -> dict:
