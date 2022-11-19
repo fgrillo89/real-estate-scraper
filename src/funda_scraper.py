@@ -152,14 +152,15 @@ class FundaScraper(Scraper):
             houses = [self.get_house_attributes(result, self.house_attributes_shallow) for result in results]
             house_data = house_data + houses
 
-        df = pd.DataFrame(house_data)
-        parsed_df = parse_dataframe(self.house_attributes_shallow, df)
+        df_shallow = pd.DataFrame(house_data)
+        parsed_df = parse_dataframe(self.house_attributes_shallow, df_shallow)
         parsed_df['Id'] = self.id_from_df(parsed_df)
+        parsed_df['url'] = parsed_df.href.transform(lambda x: self.main_url + x).values
         return parsed_df
 
     async def scrape_deep_async(self, city: str, pages: Union[None, list[int]]):
         df_shallow = await self.scrape_shallow_async(city, pages)
-        urls = df_shallow.href.transform(lambda x: self.main_url + x).values
+        urls =df_shallow.url.values
         ids = df_shallow.Id.values
 
         async def get_soup(id, url):
