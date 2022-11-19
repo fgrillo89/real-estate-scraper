@@ -14,6 +14,7 @@ from pipe import traverse, select, sort
 from config_loader import config_loader, AttributesEnum
 from parsing import str_from_tag, parse_dataframe
 from scraper import Scraper
+from utils import func_timer
 
 config_path = Path.cwd() / 'config' / 'config.json'
 config = config_loader(config_path)
@@ -129,18 +130,14 @@ class FundaScraper(Scraper):
         soups = await asyncio.gather(*(self._get_soup_city(city, i) for i in pages))
         return soups
 
+    @func_timer
     def scrape_shallow(self, city: str, pages: Union[None, list[int]] = None):
-        t0 = perf_counter()
         df = asyncio.run(self.scrape_shallow_async(city, pages))
-        time_elapsed = round(perf_counter() - t0, 3)
-        print(f"{time_elapsed=} s")
         return df
 
+    @func_timer
     def scrape_deep(self, city: str, pages: Union[None, list[int]] = None):
-        t0 = perf_counter()
         df = asyncio.run(self.scrape_deep_async(city, pages))
-        time_elapsed = round(perf_counter() - t0, 3)
-        print(f"{time_elapsed=} s")
         return df
 
     async def scrape_shallow_async(self, city=None, pages: Union[None, list[int]] = None) -> pd.DataFrame:
@@ -184,6 +181,7 @@ class FundaScraper(Scraper):
         return df.href.transform(lambda x: x.split('/')[3])
 
     @staticmethod
+    @func_timer
     def get_house_attributes(soup, attributes_enum: AttributesEnum) -> dict:
         house = {}
         for attribute in attributes_enum:
@@ -193,14 +191,6 @@ class FundaScraper(Scraper):
             house[attribute.name] = retrieved_attribute
         return house
 
-    # async def get_all_children_urls(self, ):
-    #     max_pp = await get_num_pp_from_main_page(url.format(1))
-    #     # max_pp = 150
-    #     htmls = await asyncio.gather(*(get_html(url.format(i)) for i in range(1, max_pp + 1)))
-    #     # urls = await asyncio.gather(*(extract_urls_from_main_page(html) for html in htmls))
-    #     return htmls
-
-
 if __name__ == '__main__':
     scraper = FundaScraper()
-    results = scraper.scrape_city(city='Delft', pages=[1, 2], method='shallow')
+    results = scraper.scrape_city(city='Delft', pages=[1], method='shallow')
