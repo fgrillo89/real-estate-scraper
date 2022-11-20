@@ -30,6 +30,7 @@ class Scraper(ABC):
         self.house_attributes_shallow = house_attributes_shallow
         self.house_attributes_deep = house_attributes_deep
         self.search_results_attributes = search_results_attributes
+        self.max_active_requests = 10
         self.semaphore = Semaphore(value=max_active_requests)
         self.limiter = AsyncLimiter(1, round(1 / requests_per_sec, 3))
         self.parse_only = SoupStrainer(parse_only) if parse_only else None

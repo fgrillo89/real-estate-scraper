@@ -1,11 +1,12 @@
 import asyncio
 import json
 import re
+from asyncio import Semaphore
 from functools import partial
 from itertools import chain
 from pathlib import Path
 from typing import Union
-
+from datetime import datetime
 import pandas as pd
 from bs4.element import Tag
 from pipe import traverse, select, sort
@@ -15,6 +16,7 @@ from parsing import str_from_tag, parse_dataframe
 from scraper import Scraper
 from utils import func_timer, df_to_json_async
 
+now = datetime.now
 config_path = Path.cwd() / 'config' / 'config.json'
 config = config_loader(config_path)
 
@@ -135,11 +137,13 @@ class FundaScraper(Scraper):
 
     @func_timer(debug=DEBUG)
     def scrape_shallow(self, city: str, pages: Union[None, list[int]] = None):
+        self.semaphore=Semaphore(value=self.max_active_requests)
         df = asyncio.run(self.scrape_shallow_async(city, pages))
         return df
 
     @func_timer(debug=DEBUG)
     def scrape_deep(self, city: str, pages: Union[None, list[int]] = None):
+        self.semaphore=Semaphore(value=self.max_active_requests)
         df = asyncio.run(self.scrape_deep_async(city, pages))
         return df
 
@@ -165,6 +169,7 @@ class FundaScraper(Scraper):
         parsed_df = parse_dataframe(self.house_attributes_shallow, df_shallow)
         parsed_df['Id'] = self.id_from_df(parsed_df)
         parsed_df['url'] = parsed_df.href.transform(lambda x: self.main_url + x).values
+        parsed_df['TimeStampShallow'] = now().strftime("%d/%m/%Y, %H:%M:%S")
         return parsed_df
 
     async def get_house_from_url_deep(self, url, id) -> dict:
@@ -183,6 +188,7 @@ class FundaScraper(Scraper):
         df_deep = pd.DataFrame(houses)
 
         parsed_df = parse_dataframe(self.house_attributes_deep, df_deep)
+        parsed_df['TimeStampDeep'] = now().strftime("%d/%m/%Y, %H:%M:%S")
         return df_shallow.merge(parsed_df, on='Id')
 
     async def download_page(self, city: str, page: int = 1, method='shallow'):
@@ -204,6 +210,7 @@ class FundaScraper(Scraper):
 
     @func_timer(debug=DEBUG)
     def download(self, city:str, pages: Union[None, list[int]], method='shallow'):
+        self.semaphore=Semaphore(value=self.max_active_requests)
         asyncio.run(self.download_async(city=city, pages=pages, method=method))
 
     def from_href_to_url(self, href: str) -> str:
@@ -217,6 +224,7 @@ class FundaScraper(Scraper):
     # @func_timer(debug=DEBUG)
     def get_house_attributes(soup, attributes_enum: AttributesEnum) -> dict:
         house = {}
+
         for attribute in attributes_enum:
             retrieved_attribute = attribute.retrieve_func(soup)
             if isinstance(retrieved_attribute, Tag):
