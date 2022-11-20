@@ -53,7 +53,7 @@
     {"name": "Acceptance", "text_in_website": "Acceptance", "type": "text"},
     {"name": "HouseType", "text_in_website": "Kind of house", "type": "text"},
     {"name": "BuildingType", "text_in_website": "Building type", "type": "text"},
-    {"name": "YearOfConstruction", "text_in_website": "Year of construction", "type": "numeric"},
+    {"name": "YearOfConstruction", "text_in_website": "construction", "type": "text"},
     {"name": "RoofType", "text_in_website": "Type of roof", "type": "text"},
     {"name": "LivingAreaDeep", "text_in_website": "Living area", "type": "numeric"},
     {"name": "OtherSpaceInBuilding", "text_in_website": "Other space inside the building", "type": "text"},
