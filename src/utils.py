@@ -1,8 +1,8 @@
 from time import perf_counter
 from functools import wraps
+import asyncio
 
-
-def func_timer(debug):
+def func_timer(debug=True):
 
     def inner(func):
         @wraps(func)
@@ -21,3 +21,5 @@ def func_timer(debug):
     return inner
 
 
+async def df_to_json_async(df, filepath):
+    return await asyncio.to_thread(df.to_csv, filepath, index=False, mode='a')

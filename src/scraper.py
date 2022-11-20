@@ -1,11 +1,11 @@
 from abc import ABC, abstractmethod
 from asyncio import Semaphore
-from collections import namedtuple
-from enum import Enum
+import lxml
+import cchardet
 from typing import Union
 
 from aiolimiter import AsyncLimiter
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, SoupStrainer
 
 from html_handling import get_html
 from src.config_loader import AttributesEnum
@@ -21,7 +21,8 @@ class Scraper(ABC):
                  house_attributes_deep: AttributesEnum,
                  search_results_attributes: AttributesEnum,
                  max_active_requests=10,
-                 requests_per_sec=9):
+                 requests_per_sec=9,
+                 parse_only: Union[list[str], None]=None):
         self.header = header
         self.main_url = main_url
         self.city_search_url = city_search_url
@@ -31,18 +32,16 @@ class Scraper(ABC):
         self.search_results_attributes = search_results_attributes
         self.semaphore = Semaphore(value=max_active_requests)
         self.limiter = AsyncLimiter(1, round(1 / requests_per_sec, 3))
+        self.parse_only = SoupStrainer(parse_only) if parse_only else None
 
     def get_city_url(self, city: str, page: int) -> str:
         return self.city_search_url.format(city=city, page=page)
 
     async def _get_soup(self, url: str) -> BeautifulSoup:
-        await self.semaphore.acquire()
-
-        async with self.limiter:
-            html = await get_html(url, self.header)
-
-        self.semaphore.release()
-        return BeautifulSoup(html, 'lxml')
+        async with self.semaphore:
+            async with self.limiter:
+                html = await get_html(url, self.header)
+        return BeautifulSoup(html, 'lxml', parse_only=self.parse_only)
 
     async def _get_soup_city(self, city: str, page: int) -> BeautifulSoup:
         url = self.get_city_url(city, page)

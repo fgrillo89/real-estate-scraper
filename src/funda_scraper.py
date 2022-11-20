@@ -13,7 +13,7 @@ from pipe import traverse, select, sort
 from config_loader import config_loader, AttributesEnum
 from parsing import str_from_tag, parse_dataframe
 from scraper import Scraper
-from utils import func_timer
+from utils import func_timer, df_to_json_async
 
 config_path = Path.cwd() / 'config' / 'config.json'
 config = config_loader(config_path)
@@ -21,6 +21,7 @@ config = config_loader(config_path)
 MAIN_URL = config['website']['main_url']
 CITY_SEARCH_URL = config['website']['city_search_url_template']
 HEADER = config['header']
+PARSE_ONLY = None
 house_shallow = config['house_attributes_shallow']
 house_deep = config["house_attributes_deep"]
 search_results_attrs = config['search_results_attributes']
@@ -104,6 +105,7 @@ class FundaScraper(Scraper):
                          house_attributes_shallow=house_shallow,
                          house_attributes_deep=house_deep,
                          search_results_attributes=search_results_attrs,
+                         parse_only=PARSE_ONLY,
                          **kwargs)
 
     def scrape_city(self, city, pages: Union[None, list[int]] = None, method='shallow'):
@@ -147,7 +149,6 @@ class FundaScraper(Scraper):
         houses = [self.get_house_attributes(listing, self.house_attributes_shallow) for listing in listings]
         return houses
 
-
     async def scrape_shallow_async(self, city=None, pages: Union[None, list[int]] = None) -> pd.DataFrame:
         if city is None:
             city = self.default_city
@@ -184,6 +185,27 @@ class FundaScraper(Scraper):
         parsed_df = parse_dataframe(self.house_attributes_deep, df_deep)
         return df_shallow.merge(parsed_df, on='Id')
 
+    async def download_page(self, city: str, page: int = 1, method='shallow'):
+        methods = {'shallow': self.scrape_shallow_async,
+                   'deep': self.scrape_deep_async}
+
+        df = await methods[method](city=city, pages=[page])
+        await df_to_json_async(df, 'test_json.json')
+
+    async def download_async(self, city:str, pages: Union[None, list[int]], method='shallow'):
+        if city is None:
+            city = self.default_city
+
+        if pages is None:
+            max_pp, _ = await self.get_num_pages_and_listings(city)
+            pages = range(1, max_pp + 1)
+
+        await asyncio.gather(*(self.download_page(city=city, page=page, method=method) for page in pages))
+
+    @func_timer(debug=DEBUG)
+    def download(self, city:str, pages: Union[None, list[int]], method='shallow'):
+        asyncio.run(self.download_async(city=city, pages=pages, method=method))
+
     def from_href_to_url(self, href: str) -> str:
         return self.main_url + href
 
@@ -207,4 +229,4 @@ class FundaScraper(Scraper):
 
 if __name__ == '__main__':
     scraper = FundaScraper()
-    results = scraper.scrape_city(city='Delft', pages=[1], method='shallow')
+    # results = scraper.scrape_city(city='Delft', pages=[1], method='shallow')
