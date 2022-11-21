@@ -45,7 +45,9 @@ class AttributesEnum:
 def config_loader(config_path):
     with open(config_path, 'r') as file:
         data = json.load(file)
-        config = {'header': data['header'], 'website': data['website']}
+        config = {'header': data['header'],
+                  'website': data['website'],
+                  'parse_only': data.get('parse_only')}
         for type in ATTRIBUTES_CONFIG_TYPES:
             attr = data.get(type)
             if attr:

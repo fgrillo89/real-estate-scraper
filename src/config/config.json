@@ -19,6 +19,9 @@
     "main_url": "https://www.funda.nl",
     "city_search_url_template": "https://www.funda.nl/en/koop/{city}/p{page}"
   },
+  "parse_only": [
+    "h2", "h4", "div", "span", "ul", "li", "a", "dd", "dt", "script"
+  ],
   "search_results_attributes": [
     {"name": "max_num_pages",
       "type": "numeric"},

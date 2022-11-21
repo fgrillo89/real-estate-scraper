@@ -23,7 +23,7 @@ config = config_loader(config_path)
 MAIN_URL = config['website']['main_url']
 CITY_SEARCH_URL = config['website']['city_search_url_template']
 HEADER = config['header']
-PARSE_ONLY = ['h2', 'h4', 'div', 'span', 'ul', 'li', 'a', 'dd', 'dt', 'script']
+PARSE_ONLY = config['parse_only']
 house_shallow = config['house_attributes_shallow']
 house_deep = config["house_attributes_deep"]
 search_results_attrs = config['search_results_attributes']
@@ -110,7 +110,6 @@ class FundaScraper(Scraper):
                          parse_only=PARSE_ONLY,
                          **kwargs)
 
-
     async def get_num_pages_and_listings(self, city=None):
         if city is None:
             city = self.default_city
@@ -119,22 +118,17 @@ class FundaScraper(Scraper):
         num_listings = self.search_results_attributes['num_listings'].retrieve_func(soup)
         return num_pages, num_listings
 
-    async def get_city_soups(self, city=None, pages: Union[None, list[int]] = None):
-        if city is None:
-            city = self.default_city
-
-        if pages is None:
-            max_pp, _ = await self.get_num_pages_and_listings(city)
-            pages = range(1, max_pp + 1)
-
-        soups = await asyncio.gather(*(self._get_soup_city(city, i) for i in pages))
-        return soups
-
     async def get_houses_from_page_shallow(self, city=None, page: int = 1) -> list[dict]:
         soup = await self._get_soup_city(city=city, page=page)
         listings = self.search_results_attributes['listings'].retrieve_func(soup)
         houses = [self.get_house_attributes(listing, self.house_attributes_shallow) for listing in listings]
         return houses
+
+    async def get_house_from_url_deep(self, url, id) -> dict:
+        soup = await self._get_soup(url)
+        house = self.get_house_attributes(soup, self.house_attributes_deep)
+        house['Id'] = id
+        return house
 
     async def _scrape_shallow_async(self, city=None, pages: Union[None, list[int]] = None) -> pd.DataFrame:
         if city is None:
@@ -154,12 +148,6 @@ class FundaScraper(Scraper):
         parsed_df['TimeStampShallow'] = get_timestamp()
         return parsed_df
 
-    async def get_house_from_url_deep(self, url, id) -> dict:
-        soup = await self._get_soup(url)
-        house = self.get_house_attributes(soup, self.house_attributes_deep)
-        house['Id'] = id
-        return house
-
     async def _scrape_deep_async(self, city=None, pages: Union[None, list[int]] = None):
         df_shallow = await self._scrape_shallow_async(city, pages)
         urls = df_shallow.url.values
@@ -173,14 +161,14 @@ class FundaScraper(Scraper):
         parsed_df['TimeStampDeep'] = get_timestamp()
         return df_shallow.merge(parsed_df, on='Id')
 
-    async def download_page(self, city: str, page: int = 1, method='shallow'):
+    async def _download_page(self, city: str, page: int = 1, method='shallow'):
         methods = {'shallow': self._scrape_shallow_async,
                    'deep': self._scrape_deep_async}
 
         df = await methods[method](city=city, pages=[page])
         await df_to_json_async(df, 'test.csv')
 
-    async def download_async(self, city: str, pages: Union[None, list[int]], method='shallow'):
+    async def _download_async(self, city: str, pages: Union[None, list[int]], method='shallow'):
         if city is None:
             city = self.default_city
 
@@ -188,12 +176,12 @@ class FundaScraper(Scraper):
             max_pp, _ = await self.get_num_pages_and_listings(city)
             pages = range(1, max_pp + 1)
 
-        await asyncio.gather(*(self.download_page(city=city, page=page, method=method) for page in pages))
+        await asyncio.gather(*(self._download_page(city=city, page=page, method=method) for page in pages))
 
     @func_timer(debug=DEBUG)
     def download(self, city: str, pages: Union[None, list[int]], method='shallow'):
         self.semaphore = Semaphore(value=self.max_active_requests)
-        asyncio.run(self.download_async(city=city, pages=pages, method=method))
+        asyncio.run(self._download_async(city=city, pages=pages, method=method))
 
     def from_href_to_url(self, href: str) -> str:
         return self.main_url + href
@@ -203,7 +191,6 @@ class FundaScraper(Scraper):
         return df.href.transform(lambda x: x.split('/')[4])
 
     @staticmethod
-    # @func_timer(debug=DEBUG)
     def get_house_attributes(soup, attributes_enum: AttributesEnum) -> dict:
         house = {}
 
