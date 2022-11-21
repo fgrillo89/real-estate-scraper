@@ -14,7 +14,7 @@ from pipe import traverse, select, sort
 from config_loader import config_loader, AttributesEnum
 from parsing import str_from_tag, parse_dataframe
 from scraper import Scraper
-from utils import func_timer, df_to_json_async
+from utils import func_timer, df_to_json_async, get_timestamp
 
 now = datetime.now
 config_path = Path.cwd() / 'config' / 'config.json'
@@ -163,18 +163,12 @@ class FundaScraper(Scraper):
 
         houses = await asyncio.gather(*(self.get_houses_from_page_shallow(city, i) for i in pages))
         house_data = list(chain(*houses))
-        # house_data = []
-        # soups = await asyncio.gather(*(self._get_soup_city(city, i) for i in pages))
-        # for soup in soups:
-        #     listings = self.search_results_attributes['listings'].retrieve_func(soup)
-        #     houses = [self.get_house_attributes(listing, self.house_attributes_shallow) for listing in listings]
-        #     house_data = house_data + houses
 
         df_shallow = pd.DataFrame(house_data)
         parsed_df = parse_dataframe(self.house_attributes_shallow, df_shallow)
         parsed_df['Id'] = self.id_from_df(parsed_df)
         parsed_df['url'] = parsed_df.href.transform(lambda x: self.main_url + x).values
-        parsed_df['TimeStampShallow'] = now().strftime("%d/%m/%Y, %H:%M:%S")
+        parsed_df['TimeStampShallow'] = get_timestamp()
         return parsed_df
 
     async def get_house_from_url_deep(self, url, id) -> dict:
@@ -193,7 +187,7 @@ class FundaScraper(Scraper):
         df_deep = pd.DataFrame(houses)
 
         parsed_df = parse_dataframe(self.house_attributes_deep, df_deep)
-        parsed_df['TimeStampDeep'] = now().strftime("%d/%m/%Y, %H:%M:%S")
+        parsed_df['TimeStampDeep'] = get_timestamp()
         return df_shallow.merge(parsed_df, on='Id')
 
     async def download_page(self, city: str, page: int = 1, method='shallow'):
@@ -201,7 +195,7 @@ class FundaScraper(Scraper):
                    'deep': self.scrape_deep_async}
 
         df = await methods[method](city=city, pages=[page])
-        await df_to_json_async(df, 'test_json.json')
+        await df_to_json_async(df, 'test.csv')
 
     async def download_async(self, city:str, pages: Union[None, list[int]], method='shallow'):
         if city is None:

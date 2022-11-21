@@ -1,9 +1,16 @@
 from time import perf_counter
 from functools import wraps
 import asyncio
+from datetime import datetime
+
+now = datetime.now
+
+
+def get_timestamp():
+    return now().strftime("%d/%m/%Y, %H:%M:%S")
+
 
 def func_timer(debug=True):
-
     def inner(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
