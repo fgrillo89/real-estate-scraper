@@ -162,8 +162,13 @@ class FundaScraper(Scraper):
             pages = range(1, max_pp + 1)
 
         houses = await asyncio.gather(*(self.get_houses_from_page_shallow(city, i) for i in pages))
-
         house_data = list(chain(*houses))
+        # house_data = []
+        # soups = await asyncio.gather(*(self._get_soup_city(city, i) for i in pages))
+        # for soup in soups:
+        #     listings = self.search_results_attributes['listings'].retrieve_func(soup)
+        #     houses = [self.get_house_attributes(listing, self.house_attributes_shallow) for listing in listings]
+        #     house_data = house_data + houses
 
         df_shallow = pd.DataFrame(house_data)
         parsed_df = parse_dataframe(self.house_attributes_shallow, df_shallow)

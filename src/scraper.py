@@ -21,7 +21,7 @@ class Scraper(ABC):
                  house_attributes_deep: AttributesEnum,
                  search_results_attributes: AttributesEnum,
                  max_active_requests=10,
-                 requests_per_sec=9,
+                 requests_per_sec=10,
                  parse_only: Union[list[str], None]=None):
         self.header = header
         self.main_url = main_url
