@@ -1,3 +1,4 @@
+import asyncio
 from abc import ABC, abstractmethod
 from asyncio import Semaphore
 import lxml
@@ -5,11 +6,14 @@ import cchardet
 from typing import Union
 
 from aiolimiter import AsyncLimiter
-from bs4 import BeautifulSoup, SoupStrainer
+from bs4 import BeautifulSoup
+from bs4.element import SoupStrainer
 
 from html_handling import get_html
 from src.config_loader import AttributesEnum
+from src.utils import func_timer
 
+DEBUG=True
 
 class Scraper(ABC):
     def __init__(self,
@@ -22,7 +26,7 @@ class Scraper(ABC):
                  search_results_attributes: AttributesEnum,
                  max_active_requests=10,
                  requests_per_sec=10,
-                 parse_only: Union[list[str], None]=None):
+                 parse_only: Union[list[str], None] = None):
         self.header = header
         self.main_url = main_url
         self.city_search_url = city_search_url
@@ -48,13 +52,21 @@ class Scraper(ABC):
         url = self.get_city_url(city, page)
         return await self._get_soup(url=url)
 
+    @func_timer(debug=DEBUG)
+    def scrape_city(self, city, pages: Union[None, list[int]] = None, method='shallow'):
+        method_map = {'shallow': self._scrape_shallow_async,
+                      'deep': self._scrape_deep_async}
+
+        if method not in method_map:
+            raise KeyError(f"'{method}' is not a valid method. Available methods: {list(method_map)}")
+
+        self.semaphore = Semaphore(self.max_active_requests)
+        return asyncio.run(method_map[method](city, pages))
+
     @abstractmethod
-    def scrape_shallow(self, city: str, pages: Union[None, list[int]]):
+    def _scrape_shallow_async(self, city=None, pages: Union[None, list[int]] = None):
         pass
 
     @abstractmethod
-    def scrape_deep(self, city: str, pages: Union[None, list[int]]):
-        pass
-
-    def scrape_city(self, city: str, max_pp=None, method='shallow'):
+    def _scrape_deep_async(self, city=None, pages: Union[None, list[int]] = None):
         pass
