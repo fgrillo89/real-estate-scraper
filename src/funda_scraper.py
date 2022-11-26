@@ -11,7 +11,7 @@ import pandas as pd
 from bs4.element import Tag
 from pipe import traverse, select, sort
 
-from config_loader import config_loader, AttributesEnum
+from config_loader import config_loader, ItemsEnum
 from parsing import str_from_tag, parse_dataframe
 from scraper import Scraper
 from utils import func_timer, df_to_json_async, get_timestamp
@@ -69,8 +69,8 @@ for attr in house_deep:
 get_neighbourhood = lambda soup: soup.find("span", class_="object-header__subtitle")
 get_description = lambda soup: soup.find("div", class_="object-description-body")
 
-house_deep.Neighbourhood.retrieve_func = get_neighbourhood
-house_deep.Description.retrieve_func = get_description
+house_deep.Neighbourhood.retrieve = get_neighbourhood
+house_deep.Description.retrieve = get_description
 
 
 def get_max_num_pages(soup):
@@ -114,13 +114,13 @@ class FundaScraper(Scraper):
         if city is None:
             city = self.default_city
         soup = await self._get_soup_city(city=city, page=1)
-        num_pages = self.search_results_attributes['max_num_pages'].retrieve_func(soup)
-        num_listings = self.search_results_attributes['num_listings'].retrieve_func(soup)
+        num_pages = self.search_results_attributes['max_num_pages'].retrieve(soup)
+        num_listings = self.search_results_attributes['num_listings'].retrieve(soup)
         return num_pages, num_listings
 
     async def get_houses_from_page_shallow(self, city=None, page: int = 1) -> list[dict]:
         soup = await self._get_soup_city(city=city, page=page)
-        listings = self.search_results_attributes['listings'].retrieve_func(soup)
+        listings = self.search_results_attributes['listings'].retrieve(soup)
         houses = [self.get_house_attributes(listing, self.house_attributes_shallow) for listing in listings]
         return houses
 
@@ -191,11 +191,11 @@ class FundaScraper(Scraper):
         return df.href.transform(lambda x: x.split('/')[4])
 
     @staticmethod
-    def get_house_attributes(soup, attributes_enum: AttributesEnum) -> dict:
+    def get_house_attributes(soup, attributes_enum: ItemsEnum) -> dict:
         house = {}
 
         for attribute in attributes_enum:
-            retrieved_attribute = attribute.retrieve_func(soup)
+            retrieved_attribute = attribute.retrieve(soup)
             if isinstance(retrieved_attribute, Tag):
                 retrieved_attribute = str_from_tag(retrieved_attribute)
             house[attribute.name] = retrieved_attribute

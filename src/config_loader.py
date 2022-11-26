@@ -9,15 +9,40 @@ ATTRIBUTES_CONFIG_TYPES = ["house_attributes_shallow",
 
 
 @dataclass(slots=True)
-class Attribute:
+class Item:
+    FIELD_TYPES = ['text', 'numeric']
     name: str
     type: str
-    text_in_website: str = field(default=None, repr=False)
-    retrieve_func: Callable = field(default=None, repr=False)
+    text_in_website: Union[None, str] = field(default=None, repr=False)
+    retrieve: Union[None, Callable] = field(default=None, repr=False)
+
+    @classmethod
+    def from_dict(cls, item_dict):
+        kwargs = {attr: item_dict.get(attr) for attr in cls.__dataclass_fields__}
+        return cls(**kwargs)
+
+    def __post_init__(self):
+        self.validate_type()
+        self.validate_fields()
+
+    def validate_fields(self):
+        for attr_name in Item.__dataclass_fields__:
+            attr = self.__getattribute__(attr_name)
+            expected_type = Item.__dataclass_fields__[attr_name].type
+            actual_type = type(attr)
+            message = f"The expected type of {attr_name!r} is {expected_type!r} and was instead {actual_type!r}"
+            try:
+                assert isinstance(attr, expected_type)
+            except AssertionError:
+                raise TypeError(message)
+
+    def validate_type(self):
+        if self.type not in self.FIELD_TYPES:
+            raise TypeError(f"{self.type} is not a valid type. Allowed types: {self.FIELD_TYPES}")
 
 
 @dataclass(slots=True)
-class WebsiteSettings:
+class WebsiteConfig:
     name: str
     main_url: str
     city_search_url_template: str
@@ -25,20 +50,22 @@ class WebsiteSettings:
     parse_only: Union[None, list[str]] = field(default=None)
 
 
+@dataclass(slots=True)
+class SearchResultsItems:
+    number_of_pages: Item
+    number_of_listings: Item
+    listings: Item
 
-class AttributesEnum:
+
+class ItemsEnum:
     def __init__(self, *attrs: dict):
         self._attributes = []
         for attr in attrs:
-            if attr["type"] not in ['text', 'numeric']:
-                raise TypeError(f"{attr['type']} is not a valid type. Allowed types: 'numeric' or 'text'")
-            setattr(self, attr['name'], Attribute(name=attr['name'],
-                                                  type=attr['type'],
-                                                  text_in_website=attr.get("text_in_website")))
+            setattr(self, attr['name'], Item.from_dict(attr))
             self._attributes.append(attr['name'])
 
     def map_func_to_attr(self, item: str, func: Callable):
-        self[item].retrieve_func = func
+        self[item].retrieve = func
 
     def __getitem__(self, item):
         return self.__getattribute__(item)
@@ -61,7 +88,7 @@ def config_loader(config_path):
         for conf in ATTRIBUTES_CONFIG_TYPES:
             attr = data.get(conf)
             if attr:
-                config[conf] = AttributesEnum(*attr)
+                config[conf] = ItemsEnum(*attr)
         return config
 
 
