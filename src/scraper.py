@@ -1,7 +1,6 @@
 import asyncio
 from abc import ABC, abstractmethod
 from asyncio import Semaphore
-import lxml
 import cchardet
 from typing import Union
 

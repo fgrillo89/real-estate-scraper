@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Union
 from dataclasses import dataclass, field
 
 ATTRIBUTES_CONFIG_TYPES = ["house_attributes_shallow",
@@ -16,8 +16,18 @@ class Attribute:
     retrieve_func: Callable = field(default=None, repr=False)
 
 
+@dataclass(slots=True)
+class WebsiteSettings:
+    name: str
+    main_url: str
+    city_search_url_template: str
+    header: Union[None, dict] = field(default=None)
+    parse_only: Union[None, list[str]] = field(default=None)
+
+
+
 class AttributesEnum:
-    def __init__(self, attrs: list[dict]):
+    def __init__(self, *attrs: dict):
         self._attributes = []
         for attr in attrs:
             if attr["type"] not in ['text', 'numeric']:
@@ -48,10 +58,10 @@ def config_loader(config_path):
         config = {'header': data['header'],
                   'website': data['website'],
                   'parse_only': data.get('parse_only')}
-        for type in ATTRIBUTES_CONFIG_TYPES:
-            attr = data.get(type)
+        for conf in ATTRIBUTES_CONFIG_TYPES:
+            attr = data.get(conf)
             if attr:
-                config[type] = AttributesEnum(attr)
+                config[conf] = AttributesEnum(*attr)
         return config
 
 
