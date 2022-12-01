@@ -11,7 +11,7 @@ import pandas as pd
 from bs4.element import Tag
 from pipe import traverse, select, sort
 
-from config_loader import config_loader, NamedItemsList
+from configuration import config_loader, NamedItemsList
 from parsing import str_from_tag, parse_dataframe
 from scraper import Scraper
 from utils import func_timer, df_to_json_async, get_timestamp

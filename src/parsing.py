@@ -5,7 +5,7 @@ from bs4.element import Tag
 from typing import Union
 import re
 
-from src.config_loader import NamedItemsList
+from src.configuration import NamedItemsList
 
 
 def str_from_tag(tag: Tag, strip=True, **kwargs) -> Union[None, str]:

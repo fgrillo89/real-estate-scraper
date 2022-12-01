@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 from bs4.element import SoupStrainer
 
 from html_handling import get_html
-from src.config_loader import NamedItemsList
+from src.configuration import NamedItemsList
 from src.utils import func_timer
 
 DEBUG=True
