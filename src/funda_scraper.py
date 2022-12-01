@@ -11,7 +11,7 @@ import pandas as pd
 from bs4.element import Tag
 from pipe import traverse, select, sort
 
-from config_loader import config_loader, ItemsEnum
+from config_loader import config_loader, NamedItemsList
 from parsing import str_from_tag, parse_dataframe
 from scraper import Scraper
 from utils import func_timer, df_to_json_async, get_timestamp
@@ -191,7 +191,7 @@ class FundaScraper(Scraper):
         return df.href.transform(lambda x: x.split('/')[4])
 
     @staticmethod
-    def get_house_attributes(soup, attributes_enum: ItemsEnum) -> dict:
+    def get_house_attributes(soup, attributes_enum: NamedItemsList) -> dict:
         house = {}
 
         for attribute in attributes_enum:

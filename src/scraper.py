@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 from bs4.element import SoupStrainer
 
 from html_handling import get_html
-from src.config_loader import ItemsEnum
+from src.config_loader import NamedItemsList
 from src.utils import func_timer
 
 DEBUG=True
@@ -20,9 +20,9 @@ class Scraper(ABC):
                  main_url: str,
                  city_search_url: str,
                  default_city: str,
-                 house_attributes_shallow: ItemsEnum,
-                 house_attributes_deep: ItemsEnum,
-                 search_results_attributes: ItemsEnum,
+                 house_attributes_shallow: NamedItemsList,
+                 house_attributes_deep: NamedItemsList,
+                 search_results_attributes: NamedItemsList,
                  max_active_requests=10,
                  requests_per_sec=10,
                  parse_only: Union[list[str], None] = None):
