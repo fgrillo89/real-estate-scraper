@@ -19,6 +19,7 @@
     },
     "main_url": "https://www.funda.nl",
     "city_search_url_template": "https://www.funda.nl/en/koop/{city}/p{page}",
+    "default_city": "heel-nederland",
     "parse_only": [
       "h2",
       "h4",

@@ -9,42 +9,30 @@ from bs4 import BeautifulSoup
 from bs4.element import SoupStrainer
 
 from html_handling import get_html
-from src.configuration import NamedItemsList
+from src.configuration import ScraperConfig
 from src.utils import func_timer
 
 DEBUG=True
 
 class Scraper(ABC):
     def __init__(self,
-                 header: dict,
-                 main_url: str,
-                 city_search_url: str,
-                 default_city: str,
-                 house_attributes_shallow: NamedItemsList,
-                 house_attributes_deep: NamedItemsList,
-                 search_results_attributes: NamedItemsList,
+                 config: ScraperConfig,
                  max_active_requests=10,
-                 requests_per_sec=10,
-                 parse_only: Union[list[str], None] = None):
-        self.header = header
-        self.main_url = main_url
-        self.city_search_url = city_search_url
-        self.default_city = default_city
-        self.house_attributes_shallow = house_attributes_shallow
-        self.house_attributes_deep = house_attributes_deep
-        self.search_results_attributes = search_results_attributes
+                 requests_per_sec=10):
+        self.config = config
         self.max_active_requests = 10
         self.semaphore = Semaphore(value=max_active_requests)
         self.limiter = AsyncLimiter(1, round(1 / requests_per_sec, 3))
+        parse_only = config.website_settings.parse_only
         self.parse_only = SoupStrainer(parse_only) if parse_only else None
 
     def get_city_url(self, city: str, page: int) -> str:
-        return self.city_search_url.format(city=city, page=page)
+        return self.config.website_settings.city_search_url_template.format(city=city, page=page)
 
     async def _get_soup(self, url: str) -> BeautifulSoup:
         async with self.semaphore:
             async with self.limiter:
-                html = await get_html(url, self.header)
+                html = await get_html(url, self.config.website_settings.header)
         return BeautifulSoup(html, 'lxml', parse_only=self.parse_only)
 
     async def _get_soup_city(self, city: str, page: int) -> BeautifulSoup:

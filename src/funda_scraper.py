@@ -11,25 +11,16 @@ import pandas as pd
 from bs4.element import Tag
 from pipe import traverse, select, sort
 
-from configuration import config_loader, NamedItemsList
+from configuration import ScraperConfig, NamedItemsDict
 from parsing import str_from_tag, parse_dataframe
 from scraper import Scraper
 from utils import func_timer, df_to_json_async, get_timestamp
 
 now = datetime.now
-config_path = Path.cwd() / 'config' / 'config.json'
-config = config_loader(config_path)
-
-MAIN_URL = config['website']['main_url']
-CITY_SEARCH_URL = config['website']['city_search_url_template']
-HEADER = config['header']
-PARSE_ONLY = config['parse_only']
-house_shallow = config['house_attributes_shallow']
-house_deep = config["house_attributes_deep"]
-search_results_attrs = config['search_results_attributes']
+config_path = Path.cwd() / 'config' / 'config_refactored.json'
+config = ScraperConfig.from_json(config_path)
 
 DEBUG = True
-
 
 def extract_number_of_rooms(soup):
     result = soup.find('ul', class_="search-result-kenmerken").find_all('li')
@@ -49,8 +40,8 @@ house_attrs_sh_func_map = {'Address': lambda soup: soup.find('h2'),
                                .get('data-search-result-item-anchor')
                            }
 
-for attr in house_attrs_sh_func_map:
-    house_shallow.map_func_to_attr(attr, house_attrs_sh_func_map[attr])
+for item in config.house_items_shallow:
+    item.retrieve = house_attrs_sh_func_map[item.name]
 
 
 def get_attribute_deep(soup, text_in_website):
@@ -61,16 +52,16 @@ def get_attribute_deep(soup, text_in_website):
         return None
 
 
-for attr in house_deep:
-    if attr.name not in ['Description', 'Neighbourhood']:
-        func = partial(get_attribute_deep, text_in_website=attr.text_in_website)
-        house_deep.map_func_to_attr(attr.name, func)
+for item in config.house_items_deep:
+    if item.name not in ['Description', 'Neighbourhood']:
+        func = partial(get_attribute_deep, text_in_website=item.text_in_website)
+        item.retrieve = func
 
 get_neighbourhood = lambda soup: soup.find("span", class_="object-header__subtitle")
 get_description = lambda soup: soup.find("div", class_="object-description-body")
 
-house_deep.Neighbourhood.retrieve = get_neighbourhood
-house_deep.Description.retrieve = get_description
+config.house_items_deep.Neighbourhood.retrieve = get_neighbourhood
+config.house_items_deep.Description.retrieve = get_description
 
 
 def get_max_num_pages(soup):
@@ -89,50 +80,43 @@ def get_num_listings(soup):
     return json.loads(listings_results)['results_total']
 
 
-search_results_func_map = {'max_num_pages': get_max_num_pages,
-                           'num_listings': get_num_listings,
+search_results_func_map = {'number_of_pages': get_max_num_pages,
+                           'number_of_listings': get_num_listings,
                            'listings': lambda soup: soup.find_all('div', class_="search-result-content-inner")
                            }
 
-for attr in search_results_func_map:
-    search_results_attrs.map_func_to_attr(attr, search_results_func_map[attr])
+
+for item in config.search_results_items:
+    item.retrieve = search_results_func_map[item.name]
 
 
 class FundaScraper(Scraper):
-    def __init__(self, **kwargs):
-        super().__init__(header=HEADER,
-                         main_url=MAIN_URL,
-                         city_search_url=CITY_SEARCH_URL,
-                         default_city='heel-nederland',
-                         house_attributes_shallow=house_shallow,
-                         house_attributes_deep=house_deep,
-                         search_results_attributes=search_results_attrs,
-                         parse_only=PARSE_ONLY,
-                         **kwargs)
+    def __init__(self):
+        super().__init__(config=config)
 
     async def get_num_pages_and_listings(self, city=None):
         if city is None:
-            city = self.default_city
+            city = self.config.website_settings.default_city
         soup = await self._get_soup_city(city=city, page=1)
-        num_pages = self.search_results_attributes['max_num_pages'].retrieve(soup)
-        num_listings = self.search_results_attributes['num_listings'].retrieve(soup)
+        num_pages = self.config.search_results_items['max_num_pages'].retrieve(soup)
+        num_listings = self.config.search_results_items['num_listings'].retrieve(soup)
         return num_pages, num_listings
 
     async def get_houses_from_page_shallow(self, city=None, page: int = 1) -> list[dict]:
         soup = await self._get_soup_city(city=city, page=page)
-        listings = self.search_results_attributes['listings'].retrieve(soup)
-        houses = [self.get_house_attributes(listing, self.house_attributes_shallow) for listing in listings]
+        listings = self.config.search_results_items['listings'].retrieve(soup)
+        houses = [self.get_house_attributes(listing, self.config.house_items_shallow) for listing in listings]
         return houses
 
     async def get_house_from_url_deep(self, url, id) -> dict:
         soup = await self._get_soup(url)
-        house = self.get_house_attributes(soup, self.house_attributes_deep)
+        house = self.get_house_attributes(soup, self.config.house_items_deep)
         house['Id'] = id
         return house
 
     async def _scrape_shallow_async(self, city=None, pages: Union[None, list[int]] = None) -> pd.DataFrame:
         if city is None:
-            city = self.default_city
+            city = self.config.website_settings.default_city
 
         if pages is None:
             max_pp, _ = await self.get_num_pages_and_listings(city)
@@ -142,9 +126,9 @@ class FundaScraper(Scraper):
         house_data = list(chain(*houses))
 
         df_shallow = pd.DataFrame(house_data)
-        parsed_df = parse_dataframe(self.house_attributes_shallow, df_shallow)
+        parsed_df = parse_dataframe(self.config.house_items_shallow, df_shallow)
         parsed_df['Id'] = self.id_from_df(parsed_df)
-        parsed_df['url'] = parsed_df.href.transform(lambda x: self.main_url + x).values
+        parsed_df['url'] = parsed_df.href.transform(lambda x: self.config.website_settings.main_url + x).values
         parsed_df['TimeStampShallow'] = get_timestamp()
         return parsed_df
 
@@ -157,7 +141,7 @@ class FundaScraper(Scraper):
 
         df_deep = pd.DataFrame(houses)
 
-        parsed_df = parse_dataframe(self.house_attributes_deep, df_deep)
+        parsed_df = parse_dataframe(self.config.house_items_deep, df_deep)
         parsed_df['TimeStampDeep'] = get_timestamp()
         return df_shallow.merge(parsed_df, on='Id')
 
@@ -170,7 +154,7 @@ class FundaScraper(Scraper):
 
     async def _download_async(self, city: str, pages: Union[None, list[int]], method='shallow'):
         if city is None:
-            city = self.default_city
+            city = self.config.website_settings.default_city
 
         if pages is None:
             max_pp, _ = await self.get_num_pages_and_listings(city)
@@ -184,14 +168,14 @@ class FundaScraper(Scraper):
         asyncio.run(self._download_async(city=city, pages=pages, method=method))
 
     def from_href_to_url(self, href: str) -> str:
-        return self.main_url + href
+        return self.config.website_settings.main_url + href
 
     @staticmethod
     def id_from_df(df):
         return df.href.transform(lambda x: x.split('/')[4])
 
     @staticmethod
-    def get_house_attributes(soup, attributes_enum: NamedItemsList) -> dict:
+    def get_house_attributes(soup, attributes_enum: NamedItemsDict) -> dict:
         house = {}
 
         for attribute in attributes_enum:

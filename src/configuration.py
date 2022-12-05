@@ -43,20 +43,9 @@ class WebsiteConfig(ConfigObject):
     name: str
     main_url: str
     city_search_url_template: str
+    default_city: str
     header: Optional[dict] = None
     parse_only: Optional[list] = None
-
-
-@dataclass(slots=True)
-class SearchResultsItems(ConfigObject):
-    number_of_pages: Item
-    number_of_listings: Item
-    listings: Item
-
-    @classmethod
-    def from_dict(cls, items_dict):
-        kwargs = {name: Item(name, **items_dict[name]) for name in items_dict}
-        return cls(**kwargs)
 
 
 class NamedItemsDict:
@@ -78,16 +67,23 @@ class NamedItemsDict:
                 yield self.__dict__[item]
 
     def __repr__(self):
-        return f"NamedItemsList(items={[attr.name for attr in self]})"
+        return f"NamedItemsDict(items={[attr.name for attr in self]})"
+
+
+class SearchResultsItems(NamedItemsDict):
+    def __init__(self, number_of_pages: dict, number_of_listings: dict, listings: dict):
+        super(SearchResultsItems, self).__init__(number_of_pages=number_of_pages,
+                                                 number_of_listings=number_of_listings,
+                                                 listings=listings)
 
 
 def config_factory(config_type: str, config_dict: dict) -> Union[ConfigObject, NamedItemsDict]:
-    config_type_map = {"website_settings": lambda x: WebsiteConfig(**x),
-                       "search_results_items": lambda x: SearchResultsItems.from_dict(x),
-                       "house_items_shallow": lambda x: NamedItemsDict(**x),
-                       "house_items_deep": lambda x: NamedItemsDict(**x)
+    config_type_map = {"website_settings": WebsiteConfig,
+                       "search_results_items": SearchResultsItems,
+                       "house_items_shallow": NamedItemsDict,
+                       "house_items_deep": NamedItemsDict
                        }
-    return config_type_map[config_type](config_dict)
+    return config_type_map[config_type](**config_dict)
 
 
 @dataclass(slots=True)
@@ -112,6 +108,4 @@ class ScraperConfig(ConfigObject):
 
 if __name__ == '__main__':
     path_refactored = Path.cwd() / 'config' / 'config_refactored.json'
-    with open(path_refactored, 'r') as file:
-        json_ref = json.load(file)
     conf_refactored = ScraperConfig.from_json(path_refactored)
