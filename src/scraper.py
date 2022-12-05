@@ -12,13 +12,11 @@ from html_handling import get_html
 from src.configuration import ScraperConfig
 from src.utils import func_timer
 
-DEBUG=True
+DEBUG = True
+
 
 class Scraper(ABC):
-    def __init__(self,
-                 config: ScraperConfig,
-                 max_active_requests=10,
-                 requests_per_sec=10):
+    def __init__(self, config: ScraperConfig, max_active_requests: int = 10, requests_per_sec: int = 10):
         self.config = config
         self.max_active_requests = 10
         self.semaphore = Semaphore(value=max_active_requests)
@@ -26,17 +24,17 @@ class Scraper(ABC):
         parse_only = config.website_settings.parse_only
         self.parse_only = SoupStrainer(parse_only) if parse_only else None
 
-    def get_city_url(self, city: str, page: int) -> str:
+    def _get_city_url(self, city: str, page: int) -> str:
         return self.config.website_settings.city_search_url_template.format(city=city, page=page)
 
     async def _get_soup(self, url: str) -> BeautifulSoup:
         async with self.semaphore:
             async with self.limiter:
-                html = await get_html(url, self.config.website_settings.header)
+                html = await get_html(url, header=self.config.website_settings.header)
         return BeautifulSoup(html, 'lxml', parse_only=self.parse_only)
 
-    async def _get_soup_city(self, city: str, page: int) -> BeautifulSoup:
-        url = self.get_city_url(city, page)
+    async def _get_city_soup(self, city: str, page: int) -> BeautifulSoup:
+        url = self._get_city_url(city, page)
         return await self._get_soup(url=url)
 
     @func_timer(debug=DEBUG)
@@ -45,7 +43,7 @@ class Scraper(ABC):
                       'deep': self._scrape_deep_async}
 
         if method not in method_map:
-            raise KeyError(f"'{method}' is not a valid method. Available methods: {list(method_map)}")
+            raise KeyError(f"'{method}' is not a valid method. Valid methods: {list(method_map)}")
 
         self.semaphore = Semaphore(self.max_active_requests)
         return asyncio.run(method_map[method](city, pages))

@@ -97,13 +97,13 @@ class FundaScraper(Scraper):
     async def get_num_pages_and_listings(self, city=None):
         if city is None:
             city = self.config.website_settings.default_city
-        soup = await self._get_soup_city(city=city, page=1)
-        num_pages = self.config.search_results_items['max_num_pages'].retrieve(soup)
-        num_listings = self.config.search_results_items['num_listings'].retrieve(soup)
+        soup = await self._get_city_soup(city=city, page=1)
+        num_pages = self.config.search_results_items['number_of_pages'].retrieve(soup)
+        num_listings = self.config.search_results_items['number_of_listings'].retrieve(soup)
         return num_pages, num_listings
 
     async def get_houses_from_page_shallow(self, city=None, page: int = 1) -> list[dict]:
-        soup = await self._get_soup_city(city=city, page=page)
+        soup = await self._get_city_soup(city=city, page=page)
         listings = self.config.search_results_items['listings'].retrieve(soup)
         houses = [self.get_house_attributes(listing, self.config.house_items_shallow) for listing in listings]
         return houses
