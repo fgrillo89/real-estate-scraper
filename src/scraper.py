@@ -10,6 +10,7 @@ import pandas as pd
 from aiolimiter import AsyncLimiter
 from bs4 import BeautifulSoup
 from bs4.element import SoupStrainer, Tag
+from pathlib import Path
 
 from html_handling import get_html
 from src.configuration import ScraperConfig, NamedItemsDict
@@ -17,10 +18,11 @@ from src.parsing import parse_dataframe, str_from_tag
 from src.utils import func_timer, get_timestamp, df_to_file_async
 
 DEBUG = True
+DOWNLOAD_FOLDER = Path.cwd() / 'downloads'
 
 
 class Scraper:
-    def __init__(self, config: ScraperConfig, max_active_requests: int = 10, requests_per_sec: int = 10):
+    def __init__(self, config: ScraperConfig, max_active_requests: int = 5, requests_per_sec: int = 5):
         self.config = config
         self.max_active_requests = max_active_requests
         self.semaphore = Semaphore(value=max_active_requests)
@@ -104,10 +106,26 @@ class Scraper:
 
         if isinstance(pages, int):
             pages = [pages]
+
+        if pages is None:
+            max_number_of_pages, _ = await self.get_num_pages_and_listings(city)
+            pages = range(1, max_number_of_pages + 1)
+
         await asyncio.gather(*(download_page(city=city, page=page, deep=deep) for page in pages))
 
     @func_timer(debug=DEBUG)
-    def download_to_file(self, filepath, city: str, pages: Union[None, int, list[int]], deep=False, format='csv'):
+    def download_to_file(self,
+                         filepath: Optional[str] = None,
+                         city: str = None,
+                         pages: Union[None, int, list[int]] = None,
+                         deep=False,
+                         format='csv'):
+
+        if filepath is None:
+            deep_str = 'deep' if deep else 'shallow'
+            pages_str = '_'.join(map(str,pages)) if pages else 'all'
+            filepath = DOWNLOAD_FOLDER / f"{city}_{deep_str}_pages_{pages_str}.{format}"
+
         self.semaphore = Semaphore(value=self.max_active_requests)
         asyncio.run(self._download_async(city=city, filepath=filepath, pages=pages, deep=deep, format=format))
 
