@@ -11,8 +11,10 @@ from logger import logger
 now = datetime.now
 
 
-def get_timestamp():
+def get_timestamp(date_only=False):
     tms = now().replace(tzinfo=ZoneInfo("Europe/Amsterdam"))
+    if date_only:
+        return tms.strftime("%Y-%m-%d")
     return tms.isoformat()
 
 
@@ -32,9 +34,6 @@ def func_timer(debug=True):
         return wrapper
 
     return inner
-
-
-
 
 
 if __name__ == "__main__":
