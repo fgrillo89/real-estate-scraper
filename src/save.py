@@ -18,11 +18,11 @@ def to_csv(df, filepath, index=False, mode='a', encoding='utf-8', header=True, *
     return df.to_csv(filepath, index=index, mode=mode, encoding=encoding, header=header, **kwargs)
 
 
-async def df_to_file_async(df: pd.DataFrame, filepath: str, file_format: str = 'csv', **kwargs):
+async def df_to_file_async(df: pd.DataFrame, filepath, file_format: str = 'csv', **kwargs):
     FORMAT_map = {'csv': to_csv}
     return await asyncio.to_thread(FORMAT_map[file_format], df, filepath, **kwargs)
 
 
-def write_to_sqlite(table_name: str, database_name: str, df: pd.DataFrame):
+def write_to_sqlite(df: pd.DataFrame, table_name: str, database_name: str):
     with sqlite3.connect(database_name) as conn:
         df.to_sql(table_name, conn, if_exists='append', index=False)

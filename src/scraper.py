@@ -102,41 +102,46 @@ class Scraper:
         df_deep['TimeStampDeep'] = get_timestamp()
         return df_shallow.merge(df_deep, on='url')
 
-    async def _download_async(self,
-                              filepath: str,
-                              city: str,
-                              pages: Union[None, int, list[int]],
-                              deep=False,
-                              format='csv'):
+    async def download_pages(self,
+                             city: str,
+                             filepath: str,
+                             pages: Union[int, list[int]],
+                             deep=False,
+                             file_format='csv'):
+        df = await self._scrape_city_async(city=city, pages=pages, deep=deep)
+        await df_to_file_async(df, file_format=file_format, filepath=filepath)
 
-        async def download_page(city: str, page: int = 1, deep=False):
-            df = await self._scrape_city_async(city=city, pages=page, deep=deep)
-            await df_to_file_async(df, filepath, file_format=format)
+    @func_timer(debug=DEBUG)
+    def batch_download(self,
+                       filepath: Optional[str] = None,
+                       city: str = None,
+                       pages: Union[None, int, list[int]] = None,
+                       deep=False,
+                       file_format='csv'):
 
         if isinstance(pages, int):
             pages = [pages]
 
-        if pages is None:
-            max_number_of_pages, _ = await self.get_num_pages_and_listings(city)
-            pages = range(1, max_number_of_pages + 1)
-
-        await asyncio.gather(*(download_page(city=city, page=page, deep=deep) for page in pages))
-
-    @func_timer(debug=DEBUG)
-    def download_to_file(self,
-                         filepath: Optional[str] = None,
-                         city: str = None,
-                         pages: Union[None, int, list[int]] = None,
-                         deep=False,
-                         format='csv'):
-
         if filepath is None:
             deep_str = 'deep' if deep else 'shallow'
-            pages_str = '_'.join(map(str,pages)) if pages else 'all'
-            filepath = DOWNLOAD_FOLDER / f"{city}_{deep_str}_pages_{pages_str}.{format}"
+            pages_str = '_'.join(map(str, pages)) if pages else 'all'
+            filepath = DOWNLOAD_FOLDER / f"{city}_{deep_str}_pages_{pages_str}.{file_format}"
+
+        if pages is None:
+            max_number_of_pages, _ = asyncio.run(self.get_num_pages_and_listings(city))
+            pages = range(1, max_number_of_pages + 1)
 
         self.semaphore = Semaphore(value=self.max_active_requests)
-        asyncio.run(self._download_async(city=city, filepath=filepath, pages=pages, deep=deep, format=format))
+
+        async def main():
+            return await asyncio.gather(*(self.download_pages(city=city,
+                                                              filepath=filepath,
+                                                              file_format=file_format,
+                                                              pages=page,
+                                                              deep=deep) for page in pages)
+                                        )
+
+        asyncio.run(main())
 
     def from_href_to_url(self, href: str) -> str:
         return self.config.website_settings.main_url + href
