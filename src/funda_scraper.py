@@ -61,7 +61,7 @@ config.house_items_deep.Description.retrieve = get_description
 def get_max_num_pages(soup):
     pp_soup = soup.find("div", class_="pagination-pages")
     num_pages = list(pp_soup
-                     | select(lambda x: re.findall('\d+', x.text))
+                     | select(lambda x: re.findall('\d+', x.text.replace(',','')))
                      | traverse
                      | select(lambda x: int(x))
                      | sort(reverse=True)
