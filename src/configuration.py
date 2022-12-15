@@ -77,10 +77,19 @@ class SearchResultsItems(NamedItemsDict):
                                                  listings=listings)
 
 
+class HouseItemsShallow(NamedItemsDict):
+    def __init__(self, Address: dict, LivingArea: dict, Price: dict, href: dict, **kwargs):
+        super(HouseItemsShallow, self).__init__(Address=Address,
+                                                LivingArea=LivingArea,
+                                                Price=Price,
+                                                href=href,
+                                                **kwargs)
+
+
 def config_factory(config_type: str, config_dict: dict) -> Union[ConfigObject, NamedItemsDict]:
     config_type_map = {"website_settings": WebsiteConfig,
                        "search_results_items": SearchResultsItems,
-                       "house_items_shallow": NamedItemsDict,
+                       "house_items_shallow": HouseItemsShallow,
                        "house_items_deep": NamedItemsDict
                        }
     return config_type_map[config_type](**config_dict)
@@ -90,7 +99,7 @@ def config_factory(config_type: str, config_dict: dict) -> Union[ConfigObject, N
 class ScraperConfig(ConfigObject):
     website_settings: WebsiteConfig
     search_results_items: SearchResultsItems
-    house_items_shallow: NamedItemsDict
+    house_items_shallow: HouseItemsShallow
     house_items_deep: Optional[NamedItemsDict]
 
     @classmethod
