@@ -16,7 +16,8 @@ from pathlib import Path
 from html_handling import get_html
 from src.configuration import ScraperConfig, NamedItemsDict
 from src.parsing import parse_dataframe, str_from_tag
-from src.utils import func_timer, get_timestamp, df_to_file_async
+from src.utils import func_timer, get_timestamp
+from src.save import df_to_file_async
 
 from logger import logger
 
