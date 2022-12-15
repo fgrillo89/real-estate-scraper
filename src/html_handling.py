@@ -3,7 +3,6 @@ import requests
 from logger import logger
 
 
-
 def get_html_synch(url_str: str, header: dict) -> str:
     response = requests.request("GET", url_str, headers=header)
     logger.info(f"Done requesting: {url_str}")

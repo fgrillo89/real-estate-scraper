@@ -1,2 +1,11 @@
 Done requesting: https://www.funda.nl/en/koop/Delft/p1
 2022-12-15 13:59:38,399 - logger - INFO - Done requesting: https://www.funda.nl/en/koop/Delft/p1
+2022-12-15 15:40:17,707 - main_logger.txt - INFO - Done requesting: https://www.funda.nl/en/koop/Delft/p1
+2022-12-15 15:41:21,108 - main_logger.txt - INFO - Done requesting: https://www.funda.nl/en/koop/Delft/p1
+2022-12-15 15:41:21,340 - main_logger.txt - INFO - scrape_city completed in 0.7870 s
+2022-12-15 15:46:47,300 - main_logger - INFO - Done requesting: https://www.funda.nl
+2022-12-15 15:46:47,430 - main_logger - ERROR - No details found
+2022-12-15 15:51:29,290 - main_logger - INFO - Done requesting: https://www.funda.nl
+2022-12-15 15:51:29,421 - main_logger - ERROR - No details found
+2022-12-15 15:54:30,568 - main_logger - INFO - Done requesting: https://www.funda.nl
+2022-12-15 15:54:30,751 - main_logger - ERROR - No details found

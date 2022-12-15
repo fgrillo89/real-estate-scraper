@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo
 from pathlib import Path
 import pandas as pd
 import csv
+from logger import logger
 
 now = datetime.now
 
@@ -25,7 +26,7 @@ def func_timer(debug=True):
             t0 = perf_counter()
             result = func(*args, **kwargs)
             tf = perf_counter()
-            print(f"{func.__name__} completed in {(tf - t0):.4f} s")
+            logger.info(f"{func.__name__} completed in {(tf - t0):.4f} s")
             return result
 
         return wrapper

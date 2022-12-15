@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from abc import ABC, abstractmethod
 from asyncio import Semaphore
 from itertools import chain
@@ -24,7 +25,10 @@ DOWNLOAD_FOLDER = Path.cwd().parent / 'downloads'
 
 
 class Scraper:
-    def __init__(self, config: ScraperConfig, max_active_requests: int = 5, requests_per_sec: int = 5):
+    def __init__(self,
+                 config: ScraperConfig,
+                 max_active_requests: int = 5,
+                 requests_per_sec: int = 5):
         self.config = config
         self.max_active_requests = max_active_requests
         self.semaphore = Semaphore(value=max_active_requests)
@@ -70,7 +74,9 @@ class Scraper:
         house['url'] = url
         return house
 
-    async def _scrape_city_async(self, city=None, pages: Union[None, int, list[int]] = None,
+    async def _scrape_city_async(self,
+                                 city=None,
+                                 pages: Union[None, int, list[int]] = None,
                                  deep=False) -> pd.DataFrame:
         if pages is None:
             max_number_of_pages, _ = await self.get_num_pages_and_listings(city)
@@ -145,5 +151,5 @@ class Scraper:
             house[attribute.name] = retrieved_attribute
 
         if all([value is None for value in house.values()]):
-            print("No details found")
+            logger.warning("No details found")
         return house
