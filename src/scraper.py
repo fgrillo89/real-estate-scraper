@@ -150,6 +150,13 @@ class Scraper:
                 retrieved_attribute = str_from_tag(retrieved_attribute)
             house[attribute.name] = retrieved_attribute
 
+        total_items = len(attributes_enum)
+        not_none_items = total_items - list(house.values()).count(None)
+
+        msg = f"Retrieved {not_none_items}/{total_items} items"
+
+        logger.info(msg)
+
         if all([value is None for value in house.values()]):
             logger.warning("No details found")
         return house
