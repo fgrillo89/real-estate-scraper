@@ -10,7 +10,7 @@ from configuration import ScraperConfig
 from scraper import Scraper
 
 now = datetime.now
-config_path = Path.cwd() / 'config' / 'config_refactored.json'
+config_path = Path.cwd().parent / 'config' / 'config_refactored.json'
 config = ScraperConfig.from_json(config_path)
 
 DEBUG = True

@@ -18,7 +18,7 @@ from src.parsing import parse_dataframe, str_from_tag
 from src.utils import func_timer, get_timestamp, df_to_file_async
 
 DEBUG = True
-DOWNLOAD_FOLDER = Path.cwd() / 'downloads'
+DOWNLOAD_FOLDER = Path.cwd().parent / 'downloads'
 
 
 class Scraper:
