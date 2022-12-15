@@ -17,6 +17,8 @@ from src.configuration import ScraperConfig, NamedItemsDict
 from src.parsing import parse_dataframe, str_from_tag
 from src.utils import func_timer, get_timestamp, df_to_file_async
 
+from logger import logger
+
 DEBUG = True
 DOWNLOAD_FOLDER = Path.cwd().parent / 'downloads'
 

@@ -1,0 +1,2 @@
+Done requesting: https://www.funda.nl/en/koop/Delft/p1
+2022-12-15 13:59:38,399 - logger - INFO - Done requesting: https://www.funda.nl/en/koop/Delft/p1
