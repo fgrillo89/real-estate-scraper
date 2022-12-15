@@ -125,7 +125,8 @@ class Scraper:
         if filepath is None:
             deep_str = 'deep' if deep else 'shallow'
             pages_str = '_'.join(map(str, pages)) if pages else 'all'
-            filepath = DOWNLOAD_FOLDER / f"{city}_{deep_str}_pages_{pages_str}.{file_format}"
+            city_str = city if city else 'all'
+            filepath = DOWNLOAD_FOLDER / f"{city_str}_{deep_str}_pages_{pages_str}.{file_format}"
 
         if pages is None:
             max_number_of_pages, _ = asyncio.run(self.get_num_pages_and_listings(city))
