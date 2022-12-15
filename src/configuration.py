@@ -66,6 +66,9 @@ class NamedItemsDict:
             if item in self._items:
                 yield self.__dict__[item]
 
+    def __len__(self):
+        return len(self._items)
+
     def __repr__(self):
         return f"NamedItemsDict(items={[attr.name for attr in self]})"
 
