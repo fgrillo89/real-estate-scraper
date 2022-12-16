@@ -1,25 +1,20 @@
 import asyncio
-import logging
-from abc import ABC, abstractmethod
 from asyncio import Semaphore
 from itertools import chain
-
-import cchardet
+from pathlib import Path
 from typing import Union, Optional
 
 import pandas as pd
 from aiolimiter import AsyncLimiter
 from bs4 import BeautifulSoup
 from bs4.element import SoupStrainer, Tag
-from pathlib import Path
 
 from html_handling import get_html
-from src.configuration import ScraperConfig, NamedItemsDict
-from src.parsing import parse_dataframe, str_from_tag
-from src.utils import func_timer, get_timestamp
-from src.save import df_to_file_async
-
 from logger import logger
+from src.configuration import ScraperConfig, NamedItemsDict
+from src.parsing import str_from_tag
+from src.save import df_to_file_async
+from src.utils import func_timer, get_timestamp
 
 DEBUG = True
 DOWNLOAD_FOLDER = Path.cwd().parent / 'downloads'
@@ -153,7 +148,12 @@ class Scraper:
         house = {}
 
         for attribute in attributes_enum:
-            retrieved_attribute = attribute.retrieve(soup)
+            try:
+                retrieved_attribute = attribute.retrieve(soup)
+            except Exception as e:
+                msg = f"{attribute.name} was not retrieve because {e}"
+                logger.info(msg)
+                retrieved_attribute = None
             if isinstance(retrieved_attribute, Tag):
                 retrieved_attribute = str_from_tag(retrieved_attribute)
             house[attribute.name] = retrieved_attribute
@@ -166,5 +166,5 @@ class Scraper:
         logger.info(msg)
 
         if all([value is None for value in house.values()]):
-            logger.warning("No details found")
+            logger.warning("No items retrieved")
         return house
