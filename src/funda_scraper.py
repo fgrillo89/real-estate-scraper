@@ -1,6 +1,5 @@
 import json
 import re
-from datetime import datetime
 from functools import partial
 from pathlib import Path
 
@@ -9,9 +8,8 @@ from pipe import traverse, select, sort
 from configuration import ScraperConfig
 from scraper import Scraper
 
-now = datetime.now
-config_path = Path.cwd().parent / 'config' / 'config_refactored.json'
-config = ScraperConfig.from_json(config_path)
+config_path = Path.cwd().parent / 'funda_config' / 'funda_config.json'
+funda_config = ScraperConfig.from_json(config_path)
 
 DEBUG = True
 
@@ -34,7 +32,7 @@ house_attrs_sh_func_map = {'Address': lambda soup: soup.find('h2'),
                                .get('data-search-result-item-anchor')
                            }
 
-for item in config.house_items_shallow:
+for item in funda_config.house_items_shallow:
     item.retrieve = house_attrs_sh_func_map[item.name]
 
 
@@ -46,7 +44,7 @@ def get_attribute_deep(soup, text_in_website):
         return None
 
 
-for item in config.house_items_deep:
+for item in funda_config.house_items_deep:
     if item.name not in ['Description', 'Neighbourhood']:
         func = partial(get_attribute_deep, text_in_website=item.text_in_website)
         item.retrieve = func
@@ -54,8 +52,8 @@ for item in config.house_items_deep:
 get_neighbourhood = lambda soup: soup.find("span", class_="object-header__subtitle")
 get_description = lambda soup: soup.find("div", class_="object-description-body")
 
-config.house_items_deep.Neighbourhood.retrieve = get_neighbourhood
-config.house_items_deep.Description.retrieve = get_description
+funda_config.house_items_deep.Neighbourhood.retrieve = get_neighbourhood
+funda_config.house_items_deep.Description.retrieve = get_description
 
 
 def get_max_num_pages(soup):
@@ -79,11 +77,10 @@ search_results_func_map = {'number_of_pages': get_max_num_pages,
                            'listings': lambda soup: soup.find_all('div', class_="search-result-content-inner")
                            }
 
-for item in config.search_results_items:
+for item in funda_config.search_results_items:
     item.retrieve = search_results_func_map[item.name]
 
-FundaScraper = Scraper(config=config)
 
 if __name__ == '__main__':
-    scraper = FundaScraper
+    scraper = Scraper(config=funda_config)
     # results = scraper.scrape_city(city='Delft', pages=[1], method='shallow')

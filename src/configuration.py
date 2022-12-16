@@ -119,5 +119,5 @@ class ScraperConfig(ConfigObject):
 
 
 if __name__ == '__main__':
-    path_refactored = Path.cwd() / 'config' / 'config_refactored.json'
+    path_refactored = Path.cwd() / 'funda_config' / 'funda_config.json'
     conf_refactored = ScraperConfig.from_json(path_refactored)
