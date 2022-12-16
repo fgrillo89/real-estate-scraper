@@ -26,3 +26,7 @@ async def df_to_file_async(df: pd.DataFrame, filepath, file_format: str = 'csv',
 def write_to_sqlite(df: pd.DataFrame, table_name: str, database_name: str):
     with sqlite3.connect(database_name) as conn:
         df.to_sql(table_name, conn, if_exists='append', index=False)
+
+
+async def write_to_sqlite_async(df: pd.DataFrame, table_name: str, database_name: str):
+    return await asyncio.to_thread(write_to_sqlite, df, table_name, database_name)

@@ -13,10 +13,9 @@ from html_handling import get_html
 from logger import logger
 from src.configuration import ScraperConfig, NamedItemsDict
 from src.parsing import str_from_tag
-from src.save import df_to_file_async
+from src.save import df_to_file_async, write_to_sqlite_async
 from src.utils import func_timer, get_timestamp
 from tqdm import tqdm
-
 
 DEBUG = True
 DOWNLOAD_FOLDER = Path.cwd().parent / 'downloads'
@@ -104,22 +103,22 @@ class Scraper:
         df_deep['TimeStampDeep'] = get_timestamp()
         return df_shallow.merge(df_deep, on='url_deep')
 
-    async def download_pages(self,
-                             city: str,
-                             filepath: str,
-                             pages: Union[int, list[int]],
-                             deep=False,
-                             file_format='csv'):
+    async def download_pages_to_file(self,
+                                     city: str,
+                                     filepath: str,
+                                     pages: Union[int, list[int]],
+                                     deep=False,
+                                     file_format='csv'):
         df = await self._scrape_city_async(city=city, pages=pages, deep=deep)
         await df_to_file_async(df, file_format=file_format, filepath=filepath)
 
     @func_timer(debug=DEBUG)
-    def batch_download(self,
-                       filepath: Optional[str] = None,
-                       city: str = None,
-                       pages: Union[None, int, list[int]] = None,
-                       deep=False,
-                       file_format='csv'):
+    def batch_download_to_file(self,
+                               filepath: Optional[str] = None,
+                               city: str = None,
+                               pages: Union[None, int, list[int]] = None,
+                               deep=False,
+                               file_format='csv'):
 
         if isinstance(pages, int):
             pages = [pages]
@@ -138,18 +137,65 @@ class Scraper:
         self.semaphore = Semaphore(value=self.max_active_requests)
 
         async def main():
-            tasks = [asyncio.create_task(self.download_pages(city=city,
-                                                             filepath=filepath,
-                                                             file_format=file_format,
-                                                             pages=page,
-                                                             deep=deep)
-                                         ) for page in
-                     pages]
+            tasks = [asyncio.create_task(
+                self.download_pages_to_file(city=city, filepath=filepath, pages=page, deep=deep,
+                                            file_format=file_format)
+            ) for page in
+                pages]
             for task in tqdm(asyncio.as_completed(tasks), total=len(tasks)):
                 await task
 
         asyncio.run(main())
 
+    async def download_pages_to_db(self,
+                                   city: str,
+                                   pages: Union[int, list[int]],
+                                   database_name: str,
+                                   table_name,
+                                   deep=False):
+        df = await self._scrape_city_async(city=city, pages=pages, deep=deep)
+        await write_to_sqlite_async(df, database_name=database_name, table_name=table_name)
+
+    @func_timer(debug=DEBUG)
+    def batch_download_to_db(self,
+                             db_path: Optional[str] = None,
+                             table_name: Optional[str] = None,
+                             city: str = None,
+                             pages: Union[None, int, list[int]] = None,
+                             deep=False):
+
+        if isinstance(pages, int):
+            pages = [pages]
+
+        if db_path is None:
+            db_path = (DOWNLOAD_FOLDER / f"{self.config.website_settings.name}.db").__str__()
+
+        if table_name is None:
+            deep_str = 'deep' if deep else 'shallow'
+            # pages_str = '_'.join(map(str, pages)) if pages else 'all'
+            city_str = city if city else 'all'
+            date_str = get_timestamp(date_only=True).replace('-', '_')
+            table_name = f"raw.{city_str}_{deep_str}_{date_str}"
+
+        if pages is None:
+            max_number_of_pages, _ = asyncio.run(self.get_num_pages_and_listings(city))
+            pages = range(1, max_number_of_pages + 1)
+
+        self.semaphore = Semaphore(value=self.max_active_requests)
+
+        async def main():
+            tasks = [asyncio.create_task(
+                self.download_pages_to_db(city=city,
+                                          pages=page,
+                                          database_name=db_path,
+                                          table_name=table_name,
+                                          deep=deep)
+            ) for page in
+                pages]
+            for task in tqdm(asyncio.as_completed(tasks), total=len(tasks)):
+                await task
+
+        asyncio.run(main())
 
     def from_href_to_url(self, href: str) -> str:
         return self.config.website_settings.main_url + href
