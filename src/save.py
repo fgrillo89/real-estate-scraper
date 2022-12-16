@@ -15,7 +15,7 @@ def file_exists(filepath: str) -> bool:
 def to_csv(df, filepath, index=False, mode='a', encoding='utf-8', header=True, **kwargs):
     if file_exists(filepath):
         header = False
-    return df.to_csv(filepath, index=index, mode=mode, encoding=encoding, header=header, **kwargs)
+    df.to_csv(filepath, index=index, mode=mode, encoding=encoding, header=header, **kwargs)
 
 
 async def df_to_file_async(df: pd.DataFrame, filepath, file_format: str = 'csv', **kwargs):

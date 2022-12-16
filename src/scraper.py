@@ -73,7 +73,7 @@ class Scraper:
     async def get_house_from_url_deep(self, url) -> dict:
         soup = await self._get_soup(url)
         house = self.get_house_attributes(soup, self.config.house_items_deep)
-        house['url'] = url
+        house['url_deep'] = url
         return house
 
     async def _scrape_city_async(self,
@@ -98,7 +98,7 @@ class Scraper:
         if not deep:
             return df_shallow
 
-        urls = df_shallow.url.values
+        urls = df_shallow.url_deep.values
         houses = await asyncio.gather(*(self.get_house_from_url_deep(url) for url in urls))
         df_deep = pd.DataFrame(houses)
         df_deep['TimeStampDeep'] = get_timestamp()
@@ -150,15 +150,6 @@ class Scraper:
 
         asyncio.run(main())
 
-        # async def main():
-        #     return await asyncio.gather(*(self.download_pages(city=city,
-        #                                                       filepath=filepath,
-        #                                                       file_format=file_format,
-        #                                                       pages=page,
-        #                                                       deep=deep) for page in pages)
-        #                                 )
-        #
-        # asyncio.run(main())
 
     def from_href_to_url(self, href: str) -> str:
         return self.config.website_settings.main_url + href
