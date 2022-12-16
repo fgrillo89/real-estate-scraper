@@ -8,7 +8,7 @@ from pipe import traverse, select, sort
 from configuration import ScraperConfig
 from scraper import Scraper
 
-config_path = Path.cwd().parent / 'funda_config' / 'funda_config.json'
+config_path = Path.cwd().parent / 'config' / 'funda_config.json'
 funda_config = ScraperConfig.from_json(config_path)
 
 DEBUG = True

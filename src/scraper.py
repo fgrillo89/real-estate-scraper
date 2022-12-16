@@ -15,6 +15,8 @@ from src.configuration import ScraperConfig, NamedItemsDict
 from src.parsing import str_from_tag
 from src.save import df_to_file_async
 from src.utils import func_timer, get_timestamp
+from tqdm import tqdm
+
 
 DEBUG = True
 DOWNLOAD_FOLDER = Path.cwd().parent / 'downloads'
@@ -136,14 +138,27 @@ class Scraper:
         self.semaphore = Semaphore(value=self.max_active_requests)
 
         async def main():
-            return await asyncio.gather(*(self.download_pages(city=city,
-                                                              filepath=filepath,
-                                                              file_format=file_format,
-                                                              pages=page,
-                                                              deep=deep) for page in pages)
-                                        )
+            tasks = [asyncio.create_task(self.download_pages(city=city,
+                                                             filepath=filepath,
+                                                             file_format=file_format,
+                                                             pages=page,
+                                                             deep=deep)
+                                         ) for page in
+                     pages]
+            for task in tqdm(asyncio.as_completed(tasks), total=len(tasks)):
+                await task
 
         asyncio.run(main())
+
+        # async def main():
+        #     return await asyncio.gather(*(self.download_pages(city=city,
+        #                                                       filepath=filepath,
+        #                                                       file_format=file_format,
+        #                                                       pages=page,
+        #                                                       deep=deep) for page in pages)
+        #                                 )
+        #
+        # asyncio.run(main())
 
     def from_href_to_url(self, href: str) -> str:
         return self.config.website_settings.main_url + href
@@ -166,9 +181,9 @@ class Scraper:
         total_items = len(attributes_enum)
         not_none_items = total_items - list(house.values()).count(None)
 
-        msg = f"Retrieved {not_none_items}/{total_items} items"
-
-        logger.info(msg)
+        if not_none_items != total_items:
+            msg = f"Retrieved {not_none_items}/{total_items} items"
+            logger.info(msg)
 
         if all([value is None for value in house.values()]):
             logger.warning("No items retrieved")
