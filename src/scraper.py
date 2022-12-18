@@ -37,6 +37,7 @@ class Scraper:
         limiter (AsyncLimiter): An async limiter object used to limit the number of requests per second.
         parse_only (SoupStrainer): A SoupStrainer object used to parse only certain parts of the HTML.
     """
+
     def __init__(self,
                  config: ScraperConfig,
                  max_active_requests: int = 5,
