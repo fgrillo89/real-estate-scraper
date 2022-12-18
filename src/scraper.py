@@ -22,6 +22,21 @@ DOWNLOAD_FOLDER = Path.cwd().parent / 'downloads'
 
 
 class Scraper:
+    """A web scraper for scraping real estate listings from a specified website.
+
+    Parameters:
+        config (ScraperConfig): An object containing the necessary configurations for scraping the website.
+        max_active_requests (int, optional): The maximum number of active requests allowed at any given time.
+            Defaults to 5.
+        requests_per_sec (int, optional): The maximum number of requests allowed per second. Defaults to 5.
+
+    Attributes:
+        config (ScraperConfig): An object containing the necessary configurations for scraping the website.
+        max_active_requests (int): The maximum number of active requests allowed at any given time.
+        semaphore (Semaphore): A semaphore object used to limit the number of active requests.
+        limiter (AsyncLimiter): An async limiter object used to limit the number of requests per second.
+        parse_only (SoupStrainer): A SoupStrainer object used to parse only certain parts of the HTML.
+    """
     def __init__(self,
                  config: ScraperConfig,
                  max_active_requests: int = 5,
