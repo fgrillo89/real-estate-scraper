@@ -1,6 +1,8 @@
 import asyncio
 import requests
-from logger import logger
+import logging
+
+logger = logging.getLogger('main_logger')
 
 
 def get_html_synch(url_str: str, header: dict) -> str:

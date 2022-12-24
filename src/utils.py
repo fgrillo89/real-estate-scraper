@@ -1,12 +1,13 @@
-from time import perf_counter
-from functools import wraps
-import asyncio
 from datetime import datetime
+from functools import wraps
+from math import ceil
+from time import perf_counter
 from zoneinfo import ZoneInfo
-from pathlib import Path
-import pandas as pd
-import csv
+
+import logging
 from logger import logger
+
+# logger = logging.getLogger('main_logger')
 
 now = datetime.now
 
@@ -34,6 +35,16 @@ def func_timer(debug=True):
         return wrapper
 
     return inner
+
+
+def split_list(input_list: list, chunksize: int) -> list:
+    size = len(input_list)
+    n_chunks = ceil(size / chunksize)
+
+    chunks = []
+    for i in range(0, n_chunks):
+        chunks.append(input_list[i * chunksize: i * chunksize + chunksize])
+    return chunks
 
 
 if __name__ == "__main__":

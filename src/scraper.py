@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from asyncio import Semaphore
 from itertools import chain
 from pathlib import Path
@@ -10,16 +11,20 @@ from bs4 import BeautifulSoup
 from bs4.element import SoupStrainer, Tag
 
 from html_handling import get_html
-from logger import logger
+import logging
 from src.configuration import ScraperConfig, NamedItemsDict
 from src.parsing import str_from_tag
 from src.save import df_to_file_async, write_to_sqlite_async
-from src.utils import func_timer, get_timestamp
+from src.utils import func_timer, get_timestamp, split_list
 from tqdm import tqdm
+
+logger = logging.getLogger('main_logger')
 
 DEBUG = True
 DOWNLOAD_FOLDER = Path.cwd().parent / 'downloads'
 
+
+# logger.setLevel(logging.DEBUG)
 
 class Scraper:
     """A web scraper for scraping real estate listings from a specified website.
@@ -178,6 +183,7 @@ class Scraper:
                              table_name: Optional[str] = None,
                              city: str = None,
                              pages: Union[None, int, list[int]] = None,
+                             shallow_pages_per_iteration: int = 5,
                              deep=False):
 
         if isinstance(pages, int):
@@ -188,7 +194,6 @@ class Scraper:
 
         if table_name is None:
             deep_str = 'deep' if deep else 'shallow'
-            # pages_str = '_'.join(map(str, pages)) if pages else 'all'
             city_str = city if city else 'all'
             date_str = get_timestamp(date_only=True).replace('-', '_')
             table_name = f"raw.{city_str}_{deep_str}_{date_str}"
@@ -197,21 +202,17 @@ class Scraper:
             max_number_of_pages, _ = asyncio.run(self.get_num_pages_and_listings(city))
             pages = range(1, max_number_of_pages + 1)
 
-        self.semaphore = Semaphore(value=self.max_active_requests)
+        chunks = split_list(pages, chunksize=shallow_pages_per_iteration)
 
-        async def main():
-            tasks = [asyncio.create_task(
-                self.download_pages_to_db(city=city,
-                                          pages=page,
-                                          database_name=db_path,
-                                          table_name=table_name,
-                                          deep=deep)
-            ) for page in
-                pages]
-            for task in tqdm(asyncio.as_completed(tasks), total=len(tasks)):
-                await task
-
-        asyncio.run(main())
+        for chunk in tqdm(chunks, total=len(chunks)):
+            # logging.warning(chunk)
+            self.semaphore = Semaphore(value=self.max_active_requests)
+            asyncio.run(self.download_pages_to_db(city=city,
+                                                  pages=chunk,
+                                                  database_name=db_path,
+                                                  table_name=table_name,
+                                                  deep=deep)
+                        )
 
     def from_href_to_url(self, href: str) -> str:
         return self.config.website_settings.main_url + href
