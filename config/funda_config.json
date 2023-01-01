@@ -1,0 +1,203 @@
+{
+  "website_settings": {
+    "name": "funda",
+    "header": {
+      "authority": "www.funda.nl",
+      "accept": "*/*",
+      "accept-language": "en-US,en;q=0.9,nl;q=0.8,it;q=0.7",
+      "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+      "origin": "https://www.funda.nl",
+      "referer": "https://www.funda.nl/koop/rotterdam/",
+      "sec-ch-ua": "Chromium';v='106', 'Google Chrome';v='106', 'Not;A=Brand';v='99'",
+      "sec-ch-ua-mobile": "?0",
+      "sec-ch-ua-platform": "Windows",
+      "sec-fetch-dest": "empty",
+      "sec-fetch-mode": "cors",
+      "sec-fetch-site": "same-origin",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36",
+      "x-requested-with": "XMLHttpRequest"
+    },
+    "main_url": "https://www.funda.nl",
+    "city_search_url_template": "https://www.funda.nl/en/koop/{city}/p{page}",
+    "default_city": "heel-nederland",
+    "parse_only": [
+      "h2",
+      "h4",
+      "div",
+      "span",
+      "ul",
+      "li",
+      "a",
+      "dd",
+      "dt",
+      "script"
+    ]
+  },
+  "search_results_items": {
+    "number_of_pages": {
+      "type": "numeric"
+    },
+    "number_of_listings": {
+      "type": "numeric"
+    },
+    "listings": {
+      "type": "text"
+    }
+  },
+  "house_items_shallow": {
+    "Address": {
+      "type": "text"
+    },
+    "PostCode": {
+      "type": "text"
+    },
+    "LivingArea": {
+      "type": "numeric"
+    },
+    "PlotSize": {
+      "type": "numeric"
+    },
+    "Price": {
+      "type": "numeric"
+    },
+    "Rooms": {
+      "type": "numeric"
+    },
+    "href": {
+      "type": "text"
+    },
+    "HouseId": {
+      "type": "numeric"
+    }
+  },
+  "house_items_deep": {
+    "PricePerSquareMeter": {
+      "text_in_website": "Asking price per m",
+      "type": "numeric"
+    },
+    "PriceDeep": {
+      "text_in_website": "Asking price",
+      "type": "numeric"
+    },
+    "ListedSince": {
+      "text_in_website": "Listed since",
+      "type": "text"
+    },
+    "Status": {
+      "text_in_website": "Status",
+      "type": "text"
+    },
+    "Acceptance": {
+      "text_in_website": "Acceptance",
+      "type": "text"
+    },
+    "HouseType": {
+      "text_in_website": "Kind of house",
+      "type": "text"
+    },
+    "BuildingType": {
+      "text_in_website": "Building type",
+      "type": "text"
+    },
+    "YearOfConstruction": {
+      "text_in_website": "construction",
+      "type": "text"
+    },
+    "RoofType": {
+      "text_in_website": "Type of roof",
+      "type": "text"
+    },
+    "LivingAreaDeep": {
+      "text_in_website": "Living area",
+      "type": "numeric"
+    },
+    "OtherSpaceInBuilding": {
+      "text_in_website": "Other space inside the building",
+      "type": "text"
+    },
+    "ExteriorSpaceAttached": {
+      "text_in_website": "Exterior space attached to the building",
+      "type": "text"
+    },
+    "ExternalStorageSpace": {
+      "text_in_website": "External storage space",
+      "type": "text"
+    },
+    "PlotSizeDeep": {
+      "text_in_website": "Plot size",
+      "type": "numeric"
+    },
+    "Volume": {
+      "text_in_website": "Volume in cubic meters",
+      "type": "numeric"
+    },
+    "RoomsDeep": {
+      "text_in_website": "Number of rooms",
+      "type": "text"
+    },
+    "Bathrooms": {
+      "text_in_website": "Number of bath rooms",
+      "type": "text"
+    },
+    "BathroomFacilities": {
+      "text_in_website": "Bathroom facilities",
+      "type": "text"
+    },
+    "Stories": {
+      "text_in_website": "Number of stories",
+      "type": "numeric"
+    },
+    "Facilities": {
+      "text_in_website": "Facilities",
+      "type": "text"
+    },
+    "EnergyLabel": {
+      "text_in_website": "Energy label",
+      "type": "text"
+    },
+    "Insulation": {
+      "text_in_website": "Insulation",
+      "type": "text"
+    },
+    "Heating": {
+      "text_in_website": "Heating",
+      "type": "text"
+    },
+    "HotWater": {
+      "text_in_website": "Hot water",
+      "type": "text"
+    },
+    "Ownership": {
+      "text_in_website": "Ownership situation",
+      "type": "text"
+    },
+    "Location": {
+      "text_in_website": "Location",
+      "type": "text"
+    },
+    "Garden": {
+      "text_in_website": "Garden",
+      "type": "text"
+    },
+    "BackGarden": {
+      "text_in_website": "Back garden",
+      "type": "text"
+    },
+    "ShedOrStorage": {
+      "text_in_website": "Shed / storage",
+      "type": "text"
+    },
+    "ParkingFacilities": {
+      "text_in_website": "Type of parking facilities",
+      "type": "text"
+    },
+    "Neighbourhood": {
+      "text_in_website": "Neighbourhood",
+      "type": "text"
+    },
+    "Description": {
+      "text_in_website": "Description",
+      "type": "text"
+    }
+  }
+}

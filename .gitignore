@@ -1,0 +1,4 @@
+*.db
+/notebooks
+/downloads
+/logs

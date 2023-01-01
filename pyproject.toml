@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "listings-scraper"
+version = "0.0.1"
+description = "a package for scraping listings from websites"
+authors = ["fgrillo89 <fabio.grillo89@gmail.com>"]
+readme = "README.md"
+packages = [{include = "listings_scraper"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pipe = "^2.0"
+requests = "^2.28.1"
+lxml = "^4.9.2"
+aiolimiter = "^1.0.0"
+bs4 = "^0.0.1"
+tqdm = "^4.64.1"
+pandas = "^1.5.2"
+matplotlib = "^3.6.2"
+sqlalchemy = "^1.4.45"
+datetime = "^4.9"
+tzdata = "^2022.7"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
