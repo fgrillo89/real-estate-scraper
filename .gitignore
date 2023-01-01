@@ -1,4 +1,6 @@
 *.db
 /notebooks
+/.ipynb_checkpoints
 /downloads
 /logs
+/.idea
