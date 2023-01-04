@@ -5,14 +5,13 @@ from pathlib import Path
 
 from pipe import traverse, select, sort
 
-from configuration import ScraperConfig
-from scraper import Scraper
+from real_estate_scraper.configuration import ScraperConfig
+from real_estate_scraper.scraper import Scraper
 
 DEBUG = True
 
-config_path = Path.cwd().parent / 'config' / 'funda_config.json'
+config_path = Path(__file__).parent / 'funda_config.json'
 funda_config = ScraperConfig.from_json(config_path)
-
 
 
 def extract_number_of_rooms(soup):
@@ -28,9 +27,9 @@ house_attrs_sh_func_map = {'Address': lambda soup: soup.find('h2'),
                            'Price': lambda soup: soup.find('span', class_='search-result-price'),
                            'Rooms': extract_number_of_rooms,
                            'href': lambda soup: soup.find('a', attrs={"data-object-url-tracking": "resultlist"})
-                               .get('href'),
+                           .get('href'),
                            'HouseId': lambda soup: soup.find('a', attrs={"data-object-url-tracking": "resultlist"})
-                               .get('data-search-result-item-anchor')
+                           .get('data-search-result-item-anchor')
                            }
 
 for item in funda_config.house_items_shallow:
@@ -60,7 +59,7 @@ funda_config.house_items_deep.Description.retrieve = get_description
 def get_max_num_pages(soup):
     pp_soup = soup.find("div", class_="pagination-pages")
     num_pages = list(pp_soup
-                     | select(lambda x: re.findall('\d+', x.text.replace(',','')))
+                     | select(lambda x: re.findall('\d+', x.text.replace(',', '')))
                      | traverse
                      | select(lambda x: int(x))
                      | sort(reverse=True)
@@ -80,6 +79,10 @@ search_results_func_map = {'number_of_pages': get_max_num_pages,
 
 for item in funda_config.search_results_items:
     item.retrieve = search_results_func_map[item.name]
+
+
+def get_funda_scraper(logger, **kwargs):
+    return Scraper(config=funda_config, logger=logger, **kwargs)
 
 
 if __name__ == '__main__':

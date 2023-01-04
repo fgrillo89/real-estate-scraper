@@ -4,10 +4,6 @@ from math import ceil
 from time import perf_counter
 from zoneinfo import ZoneInfo
 
-import logging
-from logger import logger
-
-# logger = logging.getLogger('main_logger')
 
 now = datetime.now
 
@@ -21,19 +17,19 @@ def get_timestamp(date_only=False):
 
 def func_timer(debug=True):
     def inner(func):
+
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(self, *args, **kwargs):
             if not debug:
                 return func(*args, **kwargs)
 
             t0 = perf_counter()
-            result = func(*args, **kwargs)
+            result = func(self, *args, **kwargs)
             tf = perf_counter()
-            logger.info(f"{func.__name__} completed in {(tf - t0):.4f} s")
+            self.logger.info(f"{func.__name__} completed in {(tf - t0):.4f} s")
             return result
 
         return wrapper
-
     return inner
 
 

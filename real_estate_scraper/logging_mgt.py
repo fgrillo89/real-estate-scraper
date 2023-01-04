@@ -2,9 +2,9 @@ import logging
 import pathlib
 from pathlib import Path
 
-LOGS_FILENAME = 'logs.txt'
+LOGS_FILENAME = "{}_logs.txt"
 LOGS_FOLDER = 'logs'
-DEFAULT_LOGS_PATH = Path.cwd().parent / LOGS_FOLDER
+DEFAULT_LOGS_PATH = Path.cwd()
 LOGS_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 # create a dictionary with the COLORS for each log level
@@ -29,9 +29,12 @@ class ColoredFormatter(logging.Formatter):
 
 def create_logger(name: str = __name__
                   , log_level: int = logging.INFO
-                  , filename: str = LOGS_FILENAME
+                  , filename: str = None
                   , folder_path: pathlib.Path = DEFAULT_LOGS_PATH
                   , logs_format: str = LOGS_FORMAT) -> logging.Logger:
+
+    if filename is None:
+        filename = LOGS_FILENAME.format(name)
     filepath = folder_path / filename
 
     formatter = logging.Formatter(logs_format)
@@ -56,8 +59,6 @@ def create_logger(name: str = __name__
 
     return logger
 
-
-logger = create_logger('main_logger')
 
 if __name__ == '__main__':
     logger_test = create_logger(name='funda_logger', filename='funda_logs.txt')

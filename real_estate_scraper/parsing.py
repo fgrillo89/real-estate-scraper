@@ -2,7 +2,7 @@ import pandas as pd
 from bs4.element import Tag
 from typing import Union
 
-from listings_scraper.configuration import NamedItemsDict
+from real_estate_scraper.configuration import NamedItemsDict
 
 
 def str_from_tag(tag: Tag, strip=True, **kwargs) -> Union[None, str]:

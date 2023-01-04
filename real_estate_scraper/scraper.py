@@ -9,15 +9,15 @@ from aiolimiter import AsyncLimiter
 from bs4 import BeautifulSoup
 from bs4.element import SoupStrainer, Tag
 
-from html_handling import get_html
-import logging
-from listings_scraper.configuration import ScraperConfig, NamedItemsDict
-from listings_scraper.parsing import str_from_tag
-from listings_scraper.save import df_to_file_async, write_to_sqlite_async
-from listings_scraper.utils import func_timer, get_timestamp, split_list
+from real_estate_scraper.html_handling import get_html
+from real_estate_scraper.configuration import ScraperConfig, NamedItemsDict
+from real_estate_scraper.parsing import str_from_tag
+from real_estate_scraper.save import df_to_file_async, write_to_sqlite_async
+from real_estate_scraper.utils import func_timer, get_timestamp, split_list
 from tqdm import tqdm
+import logging
+from real_estate_scraper.logging_mgt import create_logger
 
-logger = logging.getLogger('main_logger')
 
 DEBUG = True
 DOWNLOAD_FOLDER = Path.cwd().parent / 'downloads'
@@ -45,13 +45,20 @@ class Scraper:
     def __init__(self,
                  config: ScraperConfig,
                  max_active_requests: int = 5,
-                 requests_per_sec: int = 5):
+                 requests_per_sec: int = 5,
+                 logger: logging.Logger = None):
+
+        self.logger = logger
         self.config = config
         self.max_active_requests = max_active_requests
         self.semaphore = Semaphore(value=max_active_requests)
         self.limiter = AsyncLimiter(1, round(1 / requests_per_sec, 3))
         parse_only = config.website_settings.parse_only
         self.parse_only = SoupStrainer(parse_only) if parse_only else None
+
+        if logger is None:
+            logger = create_logger(self.config.website_settings.name)
+        self.logger = logger
 
     def _get_city_url(self, city: Optional[str], page: int) -> str:
         if city is None:
@@ -204,7 +211,6 @@ class Scraper:
         chunks = split_list(pages, chunksize=shallow_pages_per_iteration)
 
         for chunk in tqdm(chunks, total=len(chunks)):
-            # logging.warning(chunk)
             self.semaphore = Semaphore(value=self.max_active_requests)
             asyncio.run(self.download_pages_to_db(city=city,
                                                   pages=chunk,
@@ -216,8 +222,7 @@ class Scraper:
     def from_href_to_url(self, href: str) -> str:
         return self.config.website_settings.main_url + href
 
-    @staticmethod
-    def get_house_attributes(soup, attributes_enum: NamedItemsDict) -> dict:
+    def get_house_attributes(self, soup, attributes_enum: NamedItemsDict) -> dict:
         house = {}
 
         for attribute in attributes_enum:
@@ -225,7 +230,7 @@ class Scraper:
                 retrieved_attribute = attribute.retrieve(soup)
             except Exception as e:
                 msg = f"{attribute.name} was not retrieve because {e}"
-                logger.info(msg)
+                self.logger.info(msg)
                 retrieved_attribute = None
             if isinstance(retrieved_attribute, Tag):
                 retrieved_attribute = str_from_tag(retrieved_attribute)
@@ -236,8 +241,8 @@ class Scraper:
 
         if not_none_items != total_items:
             msg = f"Retrieved {not_none_items}/{total_items} items"
-            logger.info(msg)
+            self.logger.info(msg)
 
         if all([value is None for value in house.values()]):
-            logger.warning("No items retrieved")
+            self.logger.warning("No items retrieved")
         return house

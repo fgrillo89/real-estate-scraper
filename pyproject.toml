@@ -4,7 +4,7 @@ version = "0.0.1"
 description = "a package for scraping listings from websites"
 authors = ["fgrillo89 <fabio.grillo89@gmail.com>"]
 readme = "README.md"
-packages = [{include = "listings_scraper"}]
+packages = [{include = "real_estate_scraper"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"

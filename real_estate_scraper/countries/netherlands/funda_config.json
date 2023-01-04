@@ -79,6 +79,10 @@
       "text_in_website": "Asking price",
       "type": "numeric"
     },
+    "OriginalPrice": {
+      "text_in_website": "Original asking price",
+      "type": "numeric"
+    },
     "ListedSince": {
       "text_in_website": "Listed since",
       "type": "text"
