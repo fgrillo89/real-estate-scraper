@@ -25,9 +25,10 @@ logger = create_logger(module_name)
 #create an instance of the Scraper class tailored to www.funda.nl
 scraper = get_funda_scraper(logger=logger)
 
-"""scrape 'deep' the first 3 search results pages for the city of Rotterdam, 
-and store the results in a DataFrame.
-because there are 15 listings per search result page, this will scrape 45 websites 
+"""
+scrape 'deep' the first 3 results pages for the city of Rotterdam, 
+and store the results in a DataFrame. Because there are 15 listings per results page, 
+this will scrape 45 websites 
 """
 df = scraper.scrape_city(city='Rotterdam', pages=[1, 2, 3], deep=True)
 
@@ -56,6 +57,6 @@ Index(['Address', 'LivingArea', 'Price', 'href', 'PostCode', 'PlotSize',
 4    € 400,000 k.k.
 Name: Price, dtype: object
 
-#scrape 'deep' the first 3 search results pages for the city of Rotterdam and store the results in a SQLite databse
+#scrape 'deep' the first 3 results pages for the city of Rotterdam and store the results in a SQLite database
 scraper.download_to_db(city='Rotterdam', pages=[1, 2, 3], deep=True, shallow_pages_per_iteration=5)
 ```
