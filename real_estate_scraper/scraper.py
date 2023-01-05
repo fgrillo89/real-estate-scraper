@@ -12,12 +12,11 @@ from bs4.element import SoupStrainer, Tag
 from real_estate_scraper.html_handling import get_html
 from real_estate_scraper.configuration import ScraperConfig, NamedItemsDict
 from real_estate_scraper.parsing import str_from_tag
-from real_estate_scraper.save import df_to_file_async, write_to_sqlite_async
+from real_estate_scraper.save import df_to_file_async, write_to_sqlite_async, write_to_sqlite
 from real_estate_scraper.utils import func_timer, get_timestamp, split_list
 from tqdm import tqdm
 import logging
 from real_estate_scraper.logging_mgt import create_logger
-
 
 DEBUG = True
 DOWNLOAD_FOLDER = Path.cwd().parent / 'downloads'
@@ -174,23 +173,14 @@ class Scraper:
 
         asyncio.run(main())
 
-    async def download_pages_to_db(self,
-                                   city: str,
-                                   pages: Union[int, list[int]],
-                                   database_name: str,
-                                   table_name,
-                                   deep=False):
-        df = await self._scrape_city_async(city=city, pages=pages, deep=deep)
-        await write_to_sqlite_async(df, database_name=database_name, table_name=table_name)
-
     @func_timer(debug=DEBUG)
-    def batch_download_to_db(self,
-                             db_path: Optional[str] = None,
-                             table_name: Optional[str] = None,
-                             city: str = None,
-                             pages: Union[None, int, list[int]] = None,
-                             shallow_pages_per_iteration: int = 5,
-                             deep=False):
+    def download_to_db(self,
+                       db_path: Optional[str] = None,
+                       table_name: Optional[str] = None,
+                       city: str = None,
+                       pages: Union[None, int, list[int]] = None,
+                       shallow_pages_per_iteration: int = 5,
+                       deep=False):
 
         if isinstance(pages, int):
             pages = [pages]
@@ -212,12 +202,8 @@ class Scraper:
 
         for chunk in tqdm(chunks, total=len(chunks)):
             self.semaphore = Semaphore(value=self.max_active_requests)
-            asyncio.run(self.download_pages_to_db(city=city,
-                                                  pages=chunk,
-                                                  database_name=db_path,
-                                                  table_name=table_name,
-                                                  deep=deep)
-                        )
+            df = asyncio.run(self._scrape_city_async(city=city, pages=chunk, deep=deep))
+            write_to_sqlite(df, database_name=db_path, table_name=table_name)
 
     def from_href_to_url(self, href: str) -> str:
         return self.config.website_settings.main_url + href
