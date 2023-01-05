@@ -12,12 +12,14 @@ def create_folder(folder_path: str):
     if not path.exists():
         path.mkdir()
 
+
 def file_exists(filepath: str) -> bool:
     # Create a Path object from the file path
     file = Path(filepath)
 
     # Check if the file exists and is a regular file (not a directory or something else)
     return file.exists() and file.is_file()
+
 
 def to_csv(df, filepath, index=False, mode='a', encoding='utf-8', header=True, **kwargs):
     if file_exists(filepath):

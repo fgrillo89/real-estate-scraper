@@ -15,12 +15,12 @@ def get_timestamp(date_only=False):
     return tms.isoformat()
 
 
-def func_timer(debug=True):
+def func_timer(active=True):
     def inner(func):
 
         @wraps(func)
         def wrapper(self, *args, **kwargs):
-            if not debug:
+            if not active:
                 return func(*args, **kwargs)
 
             t0 = perf_counter()

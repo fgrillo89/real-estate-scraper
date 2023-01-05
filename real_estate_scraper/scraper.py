@@ -18,11 +18,9 @@ from tqdm import tqdm
 import logging
 from real_estate_scraper.logging_mgt import create_logger
 
-DEBUG = True
+TIMER_ACTIVE = True
 DOWNLOAD_FOLDER = Path.cwd().parent / 'downloads'
 
-
-# logger.setLevel(logging.DEBUG)
 
 class Scraper:
     """A web scraper for scraping real estate listings from a specified website.
@@ -75,18 +73,18 @@ class Scraper:
         soup = await self._get_soup(url=url)
         return url, soup
 
-    @func_timer(debug=DEBUG)
+    @func_timer(active=TIMER_ACTIVE)
     def scrape_city(self, city, pages: Union[None, int, list[int]] = None, deep=False):
         self.semaphore = Semaphore(self.max_active_requests)
         return asyncio.run(self._scrape_city_async(city, pages, deep=deep))
 
-    async def get_num_pages_and_listings(self, city=None):
+    async def _get_num_pages_and_listings(self, city=None):
         _, soup = await self._get_city_soup(city=city, page=1)
         num_pages = self.config.search_results_items['number_of_pages'].retrieve(soup)
         num_listings = self.config.search_results_items['number_of_listings'].retrieve(soup)
         return num_pages, num_listings
 
-    async def get_houses_from_page_shallow(self, city=None, page: int = 1) -> list[dict]:
+    async def _get_houses_from_page_shallow(self, city=None, page: int = 1) -> list[dict]:
         url, soup = await self._get_city_soup(city=city, page=page)
         listings = self.config.search_results_items['listings'].retrieve(soup)
         houses = [self.get_house_attributes(listing, self.config.house_items_shallow) for listing in listings]
@@ -95,7 +93,7 @@ class Scraper:
             house['page_shallow'] = page
         return houses
 
-    async def get_house_from_url_deep(self, url) -> dict:
+    async def _get_house_from_url_deep(self, url) -> dict:
         soup = await self._get_soup(url)
         house = self.get_house_attributes(soup, self.config.house_items_deep)
         house['url_deep'] = url
@@ -106,13 +104,13 @@ class Scraper:
                                  pages: Union[None, int, list[int]] = None,
                                  deep=False) -> pd.DataFrame:
         if pages is None:
-            max_number_of_pages, _ = await self.get_num_pages_and_listings(city)
+            max_number_of_pages, _ = await self._get_num_pages_and_listings(city)
             pages = range(1, max_number_of_pages + 1)
 
         if isinstance(pages, int):
             pages = [pages]
 
-        houses = await asyncio.gather(*(self.get_houses_from_page_shallow(city, i) for i in pages))
+        houses = await asyncio.gather(*(self._get_houses_from_page_shallow(city, i) for i in pages))
 
         house_data = list(chain(*houses))
 
@@ -124,12 +122,12 @@ class Scraper:
             return df_shallow
 
         urls = df_shallow.url_deep.values
-        houses = await asyncio.gather(*(self.get_house_from_url_deep(url) for url in urls))
+        houses = await asyncio.gather(*(self._get_house_from_url_deep(url) for url in urls))
         df_deep = pd.DataFrame(houses)
         df_deep['TimeStampDeep'] = get_timestamp()
         return df_shallow.merge(df_deep, on='url_deep')
 
-    @func_timer(debug=DEBUG)
+    @func_timer(active=TIMER_ACTIVE)
     def download_to_file(self,
                          filepath: Optional[str] = None,
                          city: str = None,
@@ -148,7 +146,7 @@ class Scraper:
             filepath = DOWNLOAD_FOLDER / f"City_{city_str}_{deep_str}_pages_{pages_str}_{date_str}.csv"
 
         if pages is None:
-            max_number_of_pages, _ = asyncio.run(self.get_num_pages_and_listings(city))
+            max_number_of_pages, _ = asyncio.run(self._get_num_pages_and_listings(city))
             pages = range(1, max_number_of_pages + 1)
 
         chunks = split_list(pages, chunksize=shallow_pages_per_iteration)
@@ -158,7 +156,7 @@ class Scraper:
             df = asyncio.run(self._scrape_city_async(city=city, pages=chunk, deep=deep))
             to_csv(df, filepath=filepath)
 
-    @func_timer(debug=DEBUG)
+    @func_timer(active=TIMER_ACTIVE)
     def download_to_db(self,
                        db_path: Optional[str] = None,
                        table_name: Optional[str] = None,
@@ -180,7 +178,7 @@ class Scraper:
             table_name = f"raw.{city_str}_{deep_str}_{date_str}"
 
         if pages is None:
-            max_number_of_pages, _ = asyncio.run(self.get_num_pages_and_listings(city))
+            max_number_of_pages, _ = asyncio.run(self._get_num_pages_and_listings(city))
             pages = range(1, max_number_of_pages + 1)
 
         chunks = split_list(pages, chunksize=shallow_pages_per_iteration)

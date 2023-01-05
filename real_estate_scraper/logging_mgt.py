@@ -9,7 +9,7 @@ LOGS_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 # create a dictionary with the COLORS for each log level
 COLORS = {
-    'DEBUG': '\033[92m',  # green
+    'TIMER_ACTIVE': '\033[92m',  # green
     'INFO': '\033[94m',  # blue
     'WARNING': '\033[93m',  # yellow
     'ERROR': '\033[91m',  # red
