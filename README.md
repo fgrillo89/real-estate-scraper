@@ -43,6 +43,17 @@ Index(['Address', 'LivingArea', 'Price', 'href', 'PostCode', 'PlotSize',
        'Description', 'TimeStampDeep'],
       dtype='object')
 
+>>> df.shape[0]
+45
+
+>>> df.Price[0:5]
+0    € 375,000 k.k.
+1    € 775,000 k.k.
+2    € 465,000 k.k.
+3    € 359,000 k.k.
+4    € 400,000 k.k.
+Name: Price, dtype: object
+
 #scrape 'deep' the first 3 search results pages for the city of Rotterdam and store the results in a SQLite databse
 scraper.download_to_db(city='Rotterdam', pages=[1, 2, 3], deep=True, shallow_pages_per_iteration=5)
 ```
