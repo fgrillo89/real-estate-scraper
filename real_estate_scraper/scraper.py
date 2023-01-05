@@ -12,7 +12,7 @@ from bs4.element import SoupStrainer, Tag
 from real_estate_scraper.html_handling import get_html
 from real_estate_scraper.configuration import ScraperConfig, NamedItemsDict
 from real_estate_scraper.parsing import str_from_tag
-from real_estate_scraper.save import df_to_file_async, write_to_sqlite_async, write_to_sqlite
+from real_estate_scraper.save import df_to_file_async, write_to_sqlite_async, write_to_sqlite, to_csv
 from real_estate_scraper.utils import func_timer, get_timestamp, split_list
 from tqdm import tqdm
 import logging
@@ -129,22 +129,13 @@ class Scraper:
         df_deep['TimeStampDeep'] = get_timestamp()
         return df_shallow.merge(df_deep, on='url_deep')
 
-    async def download_pages_to_file(self,
-                                     city: str,
-                                     filepath: str,
-                                     pages: Union[int, list[int]],
-                                     deep=False,
-                                     file_format='csv'):
-        df = await self._scrape_city_async(city=city, pages=pages, deep=deep)
-        await df_to_file_async(df, file_format=file_format, filepath=filepath)
-
     @func_timer(debug=DEBUG)
-    def batch_download_to_file(self,
-                               filepath: Optional[str] = None,
-                               city: str = None,
-                               pages: Union[None, int, list[int]] = None,
-                               deep=False,
-                               file_format='csv'):
+    def download_to_file(self,
+                         filepath: Optional[str] = None,
+                         city: str = None,
+                         pages: Union[None, int, list[int]] = None,
+                         deep=False,
+                         shallow_pages_per_iteration: int = 5):
 
         if isinstance(pages, int):
             pages = [pages]
@@ -154,24 +145,18 @@ class Scraper:
             pages_str = '_'.join(map(str, pages)) if pages else 'all'
             city_str = city if city else 'all'
             date_str = get_timestamp(date_only=True)
-            filepath = DOWNLOAD_FOLDER / f"City_{city_str}_{deep_str}_pages_{pages_str}_{date_str}.{file_format}"
+            filepath = DOWNLOAD_FOLDER / f"City_{city_str}_{deep_str}_pages_{pages_str}_{date_str}.csv"
 
         if pages is None:
             max_number_of_pages, _ = asyncio.run(self.get_num_pages_and_listings(city))
             pages = range(1, max_number_of_pages + 1)
 
-        self.semaphore = Semaphore(value=self.max_active_requests)
+        chunks = split_list(pages, chunksize=shallow_pages_per_iteration)
 
-        async def main():
-            tasks = [asyncio.create_task(
-                self.download_pages_to_file(city=city, filepath=filepath, pages=page, deep=deep,
-                                            file_format=file_format)
-            ) for page in
-                pages]
-            for task in tqdm(asyncio.as_completed(tasks), total=len(tasks)):
-                await task
-
-        asyncio.run(main())
+        for chunk in tqdm(chunks, total=len(chunks)):
+            self.semaphore = Semaphore(value=self.max_active_requests)
+            df = asyncio.run(self._scrape_city_async(city=city, pages=chunk, deep=deep))
+            to_csv(df, filepath=filepath)
 
     @func_timer(debug=DEBUG)
     def download_to_db(self,
