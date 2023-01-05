@@ -28,26 +28,3 @@ def parse_dataframe(house_attributes: NamedItemsDict, df: pd.DataFrame) -> pd.Da
         if attribute.type == 'numeric':
             df[attribute.name] = pd.to_numeric(df[attribute.name].str.replace('\D+', '', regex=True))
     return df
-
-#
-
-# def digits_from_str(string: str, join=False) -> Union[None, int, list[int]]:
-#     """
-#     Extracts digits from a string
-#     :param string:
-#     :param join:
-#     :return:
-#     """
-#     if string is None:
-#         return None
-#
-#     digits_list = re.findall('\d+', string)
-#
-#     if not digits_list:
-#         return None
-#
-#     if join:
-#         digits_str = ''.join(digits_list)
-#         return int(digits_str)
-#
-#     return list(map(int, digits_list))
