@@ -1,8 +1,6 @@
 import asyncio
-import requests
-import logging
 
-logger = logging.getLogger('main_logger')
+import requests
 
 
 def get_html_synch(url_str: str, header: dict) -> str:
@@ -17,7 +15,6 @@ def get_html_synch(url_str: str, header: dict) -> str:
     """
 
     response = requests.request("GET", url_str, headers=header)
-    logger.info(f"Done requesting: {url_str}")
     return response.text
 
 
@@ -31,7 +28,6 @@ async def get_html(url: str, header: dict) -> str:
     Returns:
         str: The HTML content of the webpage.
     """
-
     return await asyncio.to_thread(get_html_synch, url, header)
 
 

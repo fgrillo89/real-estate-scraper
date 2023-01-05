@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from asyncio import Semaphore
 from itertools import chain
 from pathlib import Path
@@ -8,15 +9,14 @@ import pandas as pd
 from aiolimiter import AsyncLimiter
 from bs4 import BeautifulSoup
 from bs4.element import SoupStrainer, Tag
-
-from real_estate_scraper.html_handling import get_html
-from real_estate_scraper.configuration import ScraperConfig, NamedItemsDict
-from real_estate_scraper.parsing import str_from_tag
-from real_estate_scraper.save import df_to_file_async, write_to_sqlite_async, write_to_sqlite, to_csv
-from real_estate_scraper.utils import func_timer, get_timestamp, split_list
 from tqdm import tqdm
-import logging
+
+from real_estate_scraper.configuration import ScraperConfig, NamedItemsDict
+from real_estate_scraper.html_handling import get_html
 from real_estate_scraper.logging_mgt import create_logger
+from real_estate_scraper.parsing import str_from_tag
+from real_estate_scraper.save import write_to_sqlite, to_csv
+from real_estate_scraper.utils import func_timer, get_timestamp, split_list
 
 TIMER_ACTIVE = True
 DOWNLOAD_FOLDER = Path.cwd().parent / 'downloads'
@@ -66,6 +66,7 @@ class Scraper:
         async with self.semaphore:
             async with self.limiter:
                 html = await get_html(url, header=self.config.website_settings.header)
+        self.logger.info(f"Done requesting {url}")
         return BeautifulSoup(html, 'lxml', parse_only=self.parse_only)
 
     async def _get_city_soup(self, city: str, page: int) -> tuple[str, BeautifulSoup]:
