@@ -1,7 +1,12 @@
 import json
 from pathlib import Path
-from typing import Callable, Union, Optional
+from typing import Callable, Union, Optional, TypedDict, Dict
 from dataclasses import dataclass, field
+
+
+class ItemContent(TypedDict):
+    type: str
+    text_in_website: Optional[str]
 
 
 @dataclass
@@ -33,12 +38,6 @@ class Item(ConfigObject):
         text_in_website (str, optional): A string used to search for the item in the website's HTML. Defaults to None.
         retrieve (Callable, optional): A function used to retrieve the item from the website's HTML. Defaults to None.
 
-    Attributes:
-        _FIELD_TYPES (list): A list of the allowed types for an item.
-        name (str): The name of the item.
-        type (str): The type of the item.
-        text_in_website (str): A string used to search for the item in the website's HTML.
-        retrieve (Callable): A function used to retrieve the item from the website's HTML.
     """
 
     _FIELD_TYPES = ['text', 'numeric']
@@ -82,17 +81,15 @@ class NamedItemsDict:
     """A dictionary-like class for storing and accessing named items.
 
     Args:
-        **kwargs (dict): Keyword arguments representing the items to be stored in the dict. Each key corresponds
-            to the name of an item, and the value is a dictionary containing the attributes of the item.
-
-    Attributes:
-        _items (list): A list of the names of the items stored in the dict.
+        items (Dict[str, ItemContent]): A dictionary representing the items to be stored in the dict.
+            The keys of the dictionary correspond to the names of the items, and the values are dictionaries
+            containing the attributes of the items.
     """
 
-    def __init__(self, **kwargs: dict):
+    def __init__(self, **items: ItemContent):
         self._items = []
-        for key in kwargs:
-            setattr(self, key, Item(name=key, **kwargs[key]))
+        for key in items:
+            setattr(self, key, Item(name=key, **items[key]))
             self._items.append(key)
 
     def map_func_to_attr(self, item: str, func: Callable):
@@ -117,11 +114,12 @@ class SearchResultsItems(NamedItemsDict):
     """A class representing the necessary configurations for retrieving search results from a website.
 
        Args:
-           number_of_pages (dict): A dictionary containing the attributes of the 'number_of_pages' item.
-           number_of_listings (dict): A dictionary containing the attributes of the 'number_of_listings' item.
-           listings (dict): A dictionary containing the attributes of the 'listings' item.
+           number_of_pages (ItemContent): A dictionary containing the attributes of the 'number_of_pages' item.
+           number_of_listings (ItemContent): A dictionary containing the attributes of the 'number_of_listings' item.
+           listings (ItemContent): A dictionary containing the attributes of the 'listings' item.
        """
-    def __init__(self, number_of_pages: dict, number_of_listings: dict, listings: dict):
+
+    def __init__(self, number_of_pages: ItemContent, number_of_listings: ItemContent, listings: ItemContent):
         super(SearchResultsItems, self).__init__(number_of_pages=number_of_pages,
                                                  number_of_listings=number_of_listings,
                                                  listings=listings)
@@ -131,15 +129,20 @@ class HouseItemsShallow(NamedItemsDict):
     """A class representing the necessary configurations for retrieving shallow information about houses from a website.
 
         Args:
-            Address (dict): A dictionary containing the attributes of the 'Address' item.
-            LivingArea (dict): A dictionary containing the attributes of the 'LivingArea' item.
-            Price (dict): A dictionary containing the attributes of the 'Price' item.
-            href (dict): A dictionary containing the attributes of the 'href' item.
+            Address (ItemContent): A dictionary containing the attributes of the 'Address' item.
+            LivingArea (ItemContent): A dictionary containing the attributes of the 'LivingArea' item.
+            Price (ItemContent): A dictionary containing the attributes of the 'Price' item.
+            href (ItemContent): A dictionary containing the attributes of the 'href' item.
             **kwargs: Additional keyword arguments representing items to be stored in the dict. Each key corresponds
                 to the name of an item, and the value is a dictionary containing the attributes of the item.
         """
 
-    def __init__(self, Address: dict, LivingArea: dict, Price: dict, href: dict, **kwargs):
+    def __init__(self,
+                 Address: ItemContent,
+                 LivingArea: ItemContent,
+                 Price: ItemContent,
+                 href: ItemContent,
+                 **kwargs: ItemContent):
         super(HouseItemsShallow, self).__init__(Address=Address,
                                                 LivingArea=LivingArea,
                                                 Price=Price,
@@ -147,7 +150,8 @@ class HouseItemsShallow(NamedItemsDict):
                                                 **kwargs)
 
 
-def config_factory(config_type: str, config_dict: dict) -> Union[ConfigObject, NamedItemsDict]:
+def config_factory(config_type: str,
+                   config_dict: Union[dict, dict[str, ItemContent]]) -> Union[ConfigObject, NamedItemsDict]:
     """Create a `ConfigObject` subclass or a `NamedItemsDict` object with the given data.
 
        Args:
@@ -208,5 +212,5 @@ class ScraperConfig(ConfigObject):
 
 
 if __name__ == '__main__':
-    path_refactored = Path.cwd() / 'funda_config' / 'funda_config.json'
+    path_refactored = Path.cwd() / 'countries' / 'netherlands' / 'funda_config.json'
     conf_refactored = ScraperConfig.from_json(path_refactored)
