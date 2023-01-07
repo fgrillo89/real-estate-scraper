@@ -88,7 +88,8 @@ class Scraper:
     def scrape_city(self,
                     city: Optional[str] = None,
                     pages: Union[None, int, list[int]] = None,
-                    deep=False) -> pd.DataFrame:
+                    deep=False,
+                    shallow_batch_size: int = 5) -> pd.DataFrame:
         """Scrapes the website for the given city.
 
         Args:
@@ -100,6 +101,8 @@ class Scraper:
                     Defaults to None.
             deep (bool, optional): If True, scrape each listing's webpage.
                     Defaults to False.
+            shallow_batch_size(int, optional): Number of shallow pages to scrape
+            in a batch.
 
         Returns:
             pd.DataFrame: A dataframe containing the scraped data.
@@ -116,8 +119,13 @@ class Scraper:
             Name: Price, dtype: object
 
         """
-        self.semaphore = Semaphore(self.max_active_requests)
-        return asyncio.run(self._scrape_city_async(city, pages, deep=deep))
+        chunks = asyncio.run(self._get_pages_batches(city, pages, shallow_batch_size))
+        dataframes = []
+        for chunk in chunks:
+            self.semaphore = Semaphore(self.max_active_requests)
+            df = asyncio.run(self._scrape_city_async(city, pages=chunk, deep=deep))
+            dataframes.append(df)
+        return pd.concat(dataframes)
 
     async def _get_num_pages_and_listings(self, city: Optional[str] = None) \
             -> Tuple[int, int]:
