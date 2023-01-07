@@ -142,16 +142,6 @@ class Scraper:
             house["page_shallow"] = page
         return houses
 
-    # def _get_houses_from_shallow_soup(self, soup):
-    #     listings = self.config.search_results_items['listings'].retrieve(soup)
-    #     houses = [self.get_house_attributes(listing,
-    #     self.config.house_items_shallow) for listing in listings]
-    #     for house in houses:
-    #         house['url_shallow'] = url
-    #         house['page_shallow'] = page
-    #     return houses
-    #
-
     async def _get_house_from_url_deep(self, url: str) -> dict[str, str]:
         soup = await self._get_soup(url)
         house = self.get_house_attributes(soup, self.config.house_items_deep)
@@ -164,16 +154,8 @@ class Scraper:
             pages: Union[None, int, list[int]] = None,
             deep=False
     ) -> pd.DataFrame:
-        if pages is None:
-            max_number_of_pages, _ = await self._get_num_pages_and_listings(city)
-            pages = range(1, max_number_of_pages + 1)
 
-        if isinstance(pages, int):
-            pages = [pages]
-        #
-        # shallow_soups = await asyncio.gather(
-        #     *(self._get_city_soup(city, i) for i in pages)
-        # )
+        pages = await self._get_pages_batches(city, pages)
 
         houses = await asyncio.gather(
             *(self._get_houses_from_page_shallow(city, i) for i in pages)
@@ -198,6 +180,22 @@ class Scraper:
         df_deep["TimeStampDeep"] = get_timestamp()
         return df_shallow.merge(df_deep, on="url_deep")
 
+    async def _get_pages_batches(self,
+                                 city: Optional[str] = None,
+                                 pages: Union[None, int, list[int]] = None,
+                                 batch_size: Optional[int] = None) -> list[int]:
+        if isinstance(pages, int):
+            pages = [pages]
+
+        if pages is None:
+            max_number_of_pages, _ = await self._get_num_pages_and_listings(city)
+            pages = range(1, max_number_of_pages + 1)
+
+        if batch_size:
+            return split_list(pages, chunksize=batch_size)
+
+        return pages
+
     @func_timer(active=TIMER_ACTIVE)
     def download_to_file(
             self,
@@ -219,9 +217,6 @@ class Scraper:
             batch. The listings will be downloaded in batches of shallow_batch_size.
         """
 
-        if isinstance(pages, int):
-            pages = [pages]
-
         if filepath is None:
             deep_str = "deep" if deep else "shallow"
             pages_str = "_".join(map(str, pages)) if pages else "all"
@@ -232,11 +227,7 @@ class Scraper:
                     / f"City_{city_str}_{deep_str}_pages_{pages_str}_{date_str}.csv"
             )
 
-        if pages is None:
-            max_number_of_pages, _ = asyncio.run(self._get_num_pages_and_listings(city))
-            pages = range(1, max_number_of_pages + 1)
-
-        chunks = split_list(pages, chunksize=shallow_batch_size)
+        chunks = asyncio.run(self._get_pages_batches(city, pages, shallow_batch_size))
 
         for chunk in tqdm(chunks, total=len(chunks)):
             self.semaphore = Semaphore(value=self.max_active_requests)
@@ -265,13 +256,8 @@ class Scraper:
             batch. The listings will be downloaded in batches of shallow_batch_size.
         """
 
-        if isinstance(pages, int):
-            pages = [pages]
-
         if db_path is None:
-            db_path = (
-                    DOWNLOAD_FOLDER / f"{self.config.website_settings.name}.db"
-            ).__str__()
+            db_path = str(DOWNLOAD_FOLDER / f"{self.config.website_settings.name}.db")
 
         if table_name is None:
             deep_str = "deep" if deep else "shallow"
@@ -279,11 +265,7 @@ class Scraper:
             date_str = get_timestamp(date_only=True).replace("-", "_")
             table_name = f"raw.{city_str}_{deep_str}_{date_str}"
 
-        if pages is None:
-            max_number_of_pages, _ = asyncio.run(self._get_num_pages_and_listings(city))
-            pages = range(1, max_number_of_pages + 1)
-
-        chunks = split_list(pages, chunksize=shallow_batch_size)
+        chunks = asyncio.run(self._get_pages_batches(city, pages, shallow_batch_size))
 
         for chunk in tqdm(chunks, total=len(chunks)):
             self.semaphore = Semaphore(value=self.max_active_requests)
@@ -305,6 +287,7 @@ class Scraper:
             dict: A dictionary of house attributes.
         """
 
+        total_items = len(attributes_enum)
         house = {}
 
         for attribute in attributes_enum:
@@ -318,7 +301,6 @@ class Scraper:
                 retrieved_attribute = str_from_tag(retrieved_attribute)
             house[attribute.name] = retrieved_attribute
 
-        total_items = len(attributes_enum)
         not_none_items = total_items - list(house.values()).count(None)
 
         if not_none_items != total_items:
