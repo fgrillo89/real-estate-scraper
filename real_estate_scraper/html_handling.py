@@ -14,5 +14,5 @@ async def get_html(url: str, header: dict) -> str:
     return await asyncio.to_thread(get_html_synch, url, header)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pass

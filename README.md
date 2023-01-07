@@ -19,10 +19,10 @@ from real_estate_scraper.countries.netherlands.funda_scraper import get_funda_sc
 module_path = Path(__file__)
 module_name = module_path.stem
 
-#create logger
+# create logger
 logger = create_logger(module_name)
 
-#create an instance of the Scraper class tailored to www.funda.nl
+# create an instance of the Scraper class tailored to www.funda.nl
 scraper = get_funda_scraper(logger=logger)
 
 """
@@ -50,13 +50,13 @@ Index(['Address', 'LivingArea', 'Price', 'href', 'PostCode', 'PlotSize',
 45
 
 >>> df.Price[0:5]
-0    € 375,000 k.k.
-1    € 775,000 k.k.
-2    € 465,000 k.k.
-3    € 359,000 k.k.
-4    € 400,000 k.k.
+0    € 375, 000 k.k.
+1    € 775, 000 k.k.
+2    € 465, 000 k.k.
+3    € 359, 000 k.k.
+4    € 400, 000 k.k.
 Name: Price, dtype: object
 
-#scrape 'deep' the first 3 results pages for the city of Rotterdam and store the results in a SQLite database
-scraper.download_to_db(city='Rotterdam', pages=[1, 2, 3], deep=True, shallow_pages_per_iteration=5)
+# scrape 'deep' the first 3 results pages for the city of Rotterdam and store the results in a SQLite database
+scraper.download_to_db(city='Rotterdam', pages=[1, 2, 3], shallow_batch_size=5, deep=True)
 ```

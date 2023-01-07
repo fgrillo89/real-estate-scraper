@@ -1,4 +1,3 @@
-import json
 from datetime import datetime
 from functools import wraps
 from math import ceil
@@ -18,7 +17,6 @@ def get_timestamp(date_only=False):
 
 def func_timer(active=True):
     def inner(func):
-
         @wraps(func)
         def wrapper(self, *args, **kwargs):
             if not active:
@@ -31,6 +29,7 @@ def func_timer(active=True):
             return result
 
         return wrapper
+
     return inner
 
 
@@ -40,7 +39,7 @@ def split_list(input_list: list, chunksize: int) -> list:
 
     chunks = []
     for i in range(0, n_chunks):
-        chunks.append(input_list[i * chunksize: i * chunksize + chunksize])
+        chunks.append(input_list[i * chunksize : i * chunksize + chunksize])
     return chunks
 
 

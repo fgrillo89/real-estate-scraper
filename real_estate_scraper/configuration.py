@@ -21,7 +21,8 @@ class ConfigObject:
             attr = self.__getattribute__(attr_name)
             expected_type = self.__dataclass_fields__[attr_name].type
             actual_type = type(attr)
-            message = f"The expected type of {attr_name!r} is {expected_type!r} but was instead {actual_type!r}"
+            message = f"The expected type of {attr_name!r} is " \
+                      f"{expected_type!r} but was instead {actual_type!r}"
             try:
                 assert isinstance(attr, expected_type)
             except AssertionError:
@@ -40,9 +41,9 @@ class Item(ConfigObject):
 
     """
 
-    _FIELD_TYPES = ['text', 'numeric']
+    _FIELD_TYPES = ["text", "numeric"]
     name: str
-    type: str = field(default='text')
+    type: str = field(default="text")
     text_in_website: Optional[str] = field(default=None, repr=False)
     retrieve: Optional[Callable] = field(default=None, repr=False)
 
@@ -52,12 +53,15 @@ class Item(ConfigObject):
 
     def validate_type(self):
         if self.type not in self._FIELD_TYPES:
-            raise TypeError(f"{self.type} is not a valid type. Allowed types: {self._FIELD_TYPES}")
+            raise TypeError(
+                f"{self.type} is not a valid type. "
+                f"Allowed types: {self._FIELD_TYPES}"
+            )
 
 
 @dataclass(slots=True)
 class WebsiteConfig(ConfigObject):
-    """A class representing the necessary settings for scraping a specific website.
+    """A class representing the necessary settings for scraping a website.
 
     Args:
         name (str): The name of the website.
@@ -69,6 +73,7 @@ class WebsiteConfig(ConfigObject):
         parse_only (list, optional): A list of strings representing the HTML tags to parse when scraping the website.
             Defaults to None.
     """
+
     name: str
     main_url: str
     city_search_url_template: str
@@ -113,61 +118,70 @@ class NamedItemsDict:
 class SearchResultsItems(NamedItemsDict):
     """A class representing the necessary configurations for retrieving search results from a website.
 
-       Args:
-           number_of_pages (ItemContent): A dictionary containing the attributes of the 'number_of_pages' item.
-           number_of_listings (ItemContent): A dictionary containing the attributes of the 'number_of_listings' item.
-           listings (ItemContent): A dictionary containing the attributes of the 'listings' item.
-       """
+    Args:
+        number_of_pages (ItemContent): A dictionary containing the attributes of the 'number_of_pages' item.
+        number_of_listings (ItemContent): A dictionary containing the attributes of the 'number_of_listings' item.
+        listings (ItemContent): A dictionary containing the attributes of the 'listings' item.
+    """
 
-    def __init__(self, number_of_pages: ItemContent, number_of_listings: ItemContent, listings: ItemContent):
-        super(SearchResultsItems, self).__init__(number_of_pages=number_of_pages,
-                                                 number_of_listings=number_of_listings,
-                                                 listings=listings)
+    def __init__(
+        self,
+        number_of_pages: ItemContent,
+        number_of_listings: ItemContent,
+        listings: ItemContent,
+    ):
+        super(SearchResultsItems, self).__init__(
+            number_of_pages=number_of_pages,
+            number_of_listings=number_of_listings,
+            listings=listings,
+        )
 
 
 class HouseItemsShallow(NamedItemsDict):
     """A class representing the necessary configurations for retrieving shallow information about houses from a website.
 
-        Args:
-            Address (ItemContent): A dictionary containing the attributes of the 'Address' item.
-            LivingArea (ItemContent): A dictionary containing the attributes of the 'LivingArea' item.
-            Price (ItemContent): A dictionary containing the attributes of the 'Price' item.
-            href (ItemContent): A dictionary containing the attributes of the 'href' item.
-            **kwargs: Additional keyword arguments representing items to be stored in the dict. Each key corresponds
-                to the name of an item, and the value is a dictionary containing the attributes of the item.
-        """
+    Args:
+        Address (ItemContent): A dictionary containing the attributes of the 'Address' item.
+        LivingArea (ItemContent): A dictionary containing the attributes of the 'LivingArea' item.
+        Price (ItemContent): A dictionary containing the attributes of the 'Price' item.
+        href (ItemContent): A dictionary containing the attributes of the 'href' item.
+        **kwargs: Additional keyword arguments representing items to be stored in the dict. Each key corresponds
+            to the name of an item, and the value is a dictionary containing the attributes of the item.
+    """
 
-    def __init__(self,
-                 Address: ItemContent,
-                 LivingArea: ItemContent,
-                 Price: ItemContent,
-                 href: ItemContent,
-                 **kwargs: ItemContent):
-        super(HouseItemsShallow, self).__init__(Address=Address,
-                                                LivingArea=LivingArea,
-                                                Price=Price,
-                                                href=href,
-                                                **kwargs)
+    def __init__(
+        self,
+        Address: ItemContent,
+        LivingArea: ItemContent,
+        Price: ItemContent,
+        href: ItemContent,
+        **kwargs: ItemContent,
+    ):
+        super(HouseItemsShallow, self).__init__(
+            Address=Address, LivingArea=LivingArea, Price=Price, href=href, **kwargs
+        )
 
 
-def config_factory(config_type: str,
-                   config_dict: Union[dict, dict[str, ItemContent]]) -> Union[ConfigObject, NamedItemsDict]:
-    """Create a `ConfigObject` subclass or a `NamedItemsDict` object with the given data.
+def config_factory(
+    config_type: str, config_dict: Union[dict, dict[str, ItemContent]]
+) -> Union[ConfigObject, NamedItemsDict]:
+    """Returns a configuration object for the given type.
 
-       Args:
-           config_type (str): The type of object to create. Can be either 'website_settings', 'search_results_items',
-               'house_items_shallow', or 'house_items_deep'.
-           config_dict (dict): The data to use for initializing the object.
+    Args:
+        config_type (str): The type of object to create. Can be either 'website_settings', 'search_results_items',
+            'house_items_shallow', or 'house_items_deep'.
+        config_dict (dict): The data to use for initializing the object.
 
-       Returns:
-           Union[ConfigObject, NamedItemsDict]: A `ConfigObject` subclass or a `NamedItemsDict` object initialized
-               with the given data.
-       """
-    config_type_map = {"website_settings": WebsiteConfig,
-                       "search_results_items": SearchResultsItems,
-                       "house_items_shallow": HouseItemsShallow,
-                       "house_items_deep": NamedItemsDict
-                       }
+    Returns:
+        Union[ConfigObject, NamedItemsDict]: A `ConfigObject` subclass or a `NamedItemsDict` object initialized
+            with the given data.
+    """
+    config_type_map = {
+        "website_settings": WebsiteConfig,
+        "search_results_items": SearchResultsItems,
+        "house_items_shallow": HouseItemsShallow,
+        "house_items_deep": NamedItemsDict,
+    }
     return config_type_map[config_type](**config_dict)
 
 
@@ -200,17 +214,19 @@ class ScraperConfig(ConfigObject):
         Returns:
             ScraperConfig: A `ScraperConfig` object initialized with the data from the JSON file.
         """
-        with open(json_path, 'r') as file:
+        with open(json_path, "r") as file:
             data = json.load(file)
 
         data_by_field = {}
         for field_name in cls.__dataclass_fields__:
             field_data = data.get(field_name)
-            data_by_field[field_name] = config_factory(field_name, field_data) if field_data else None
+            data_by_field[field_name] = (
+                config_factory(field_name, field_data) if field_data else None
+            )
 
         return cls(**data_by_field)
 
 
-if __name__ == '__main__':
-    path_refactored = Path.cwd() / 'countries' / 'netherlands' / 'funda_config.json'
+if __name__ == "__main__":
+    path_refactored = Path.cwd() / "countries" / "netherlands" / "funda_config.json"
     conf_refactored = ScraperConfig.from_json(path_refactored)
