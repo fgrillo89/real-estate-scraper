@@ -31,13 +31,16 @@ class ConfigObject:
 
 @dataclass(slots=True)
 class Item(ConfigObject):
-    """A class representing a single item with a name and a type.
+    """A class representing a house item with a name and a type.
 
     Args:
         name (str): The name of the item.
-        type (str, optional): The type of the item. Can be either 'text' or 'numeric'. Defaults to 'text'.
-        text_in_website (str, optional): A string used to search for the item in the website's HTML. Defaults to None.
-        retrieve (Callable, optional): A function used to retrieve the item from the website's HTML. Defaults to None.
+        type (str, optional): The type of the item. Can be either 'text' or
+        'numeric'. Defaults to 'text'.
+        text_in_website (str, optional): A string used to search for the item in the
+        website's HTML. Defaults to None.
+        retrieve (Callable, optional): A function used to retrieve the item from the
+        website's HTML. Defaults to None.
 
     """
 
@@ -65,13 +68,15 @@ class WebsiteConfig(ConfigObject):
 
     Args:
         name (str): The name of the website.
-        main_url (str): The main URL of the website.
-        city_search_url_template (str): A URL template for searching for listings in a specific city.
-        default_city (str): The default city to use for searches if no city is specified.
-        header (dict, optional): A dictionary containing the HTTP headers to use for requests to the website.
-            Defaults to None.
-        parse_only (list, optional): A list of strings representing the HTML tags to parse when scraping the website.
-            Defaults to None.
+        main_url (str): The main URL of the website. For example,
+        "https://www.funda.nl".
+        city_search_url_template (str): URL template for searching for listings in
+        a specific city. For example, "https://www.funda.nl/en/koop/{city}/p{page}".
+        default_city (str): Default city to use for searches if no city is specified.
+        header (dict, optional): dictionary containing the HTTP headers to use for
+        requests to the website. Defaults to None.
+        parse_only (list, optional): A list of strings representing the HTML tags to
+        parse when scraping the website. Defaults to None.
     """
 
     name: str
@@ -86,9 +91,9 @@ class NamedItemsDict:
     """A dictionary-like class for storing and accessing named items.
 
     Args:
-        items (Dict[str, ItemContent]): A dictionary representing the items to be stored in the dict.
-            The keys of the dictionary correspond to the names of the items, and the values are dictionaries
-            containing the attributes of the items.
+        items (Dict[str, ItemContent]): A dictionary representing the items to be
+        stored in the dict. The keys of the dictionary correspond to the names of the
+        items, and the values are dictionaries containing the attributes of the items.
     """
 
     def __init__(self, **items: ItemContent):
@@ -116,12 +121,15 @@ class NamedItemsDict:
 
 
 class SearchResultsItems(NamedItemsDict):
-    """A class representing the necessary configurations for retrieving search results from a website.
+    """General items of the websites containing the search results (shallow pages).
 
     Args:
-        number_of_pages (ItemContent): A dictionary containing the attributes of the 'number_of_pages' item.
-        number_of_listings (ItemContent): A dictionary containing the attributes of the 'number_of_listings' item.
-        listings (ItemContent): A dictionary containing the attributes of the 'listings' item.
+        number_of_pages (ItemContent): Dictionary containing the attributes of the
+        'number_of_pages' item.
+        number_of_listings (ItemContent): Dictionary containing the attributes of
+        the 'number_of_listings' item.
+        listings (ItemContent): Dictionary containing the attributes of the
+        'listings' item.
     """
 
     def __init__(
@@ -138,16 +146,7 @@ class SearchResultsItems(NamedItemsDict):
 
 
 class HouseItemsShallow(NamedItemsDict):
-    """A class representing the necessary configurations for retrieving shallow information about houses from a website.
-
-    Args:
-        Address (ItemContent): A dictionary containing the attributes of the 'Address' item.
-        LivingArea (ItemContent): A dictionary containing the attributes of the 'LivingArea' item.
-        Price (ItemContent): A dictionary containing the attributes of the 'Price' item.
-        href (ItemContent): A dictionary containing the attributes of the 'href' item.
-        **kwargs: Additional keyword arguments representing items to be stored in the dict. Each key corresponds
-            to the name of an item, and the value is a dictionary containing the attributes of the item.
-    """
+    """House items to be retrieved from the search results (shallow)."""
 
     def __init__(
         self,
@@ -168,13 +167,14 @@ def config_factory(
     """Returns a configuration object for the given type.
 
     Args:
-        config_type (str): The type of object to create. Can be either 'website_settings', 'search_results_items',
-            'house_items_shallow', or 'house_items_deep'.
+        config_type (str): The type of object to create. Can be either
+        'website_settings', 'search_results_items', 'house_items_shallow',
+        or 'house_items_deep'.
         config_dict (dict): The data to use for initializing the object.
 
     Returns:
-        Union[ConfigObject, NamedItemsDict]: A `ConfigObject` subclass or a `NamedItemsDict` object initialized
-            with the given data.
+        Union[ConfigObject, NamedItemsDict]: A `ConfigObject` subclass or a
+        `NamedItemsDict` object initialized with the given data.
     """
     config_type_map = {
         "website_settings": WebsiteConfig,
@@ -187,17 +187,7 @@ def config_factory(
 
 @dataclass(slots=True)
 class ScraperConfig(ConfigObject):
-    """A class representing the configuration for a web scraper.
-
-    Args:
-        website_settings (WebsiteConfig): An object containing the necessary settings for scraping a specific website.
-        search_results_items (SearchResultsItems): An object containing the necessary configurations for retrieving
-            search results from the website.
-        house_items_shallow (HouseItemsShallow): An object containing the necessary configurations for retrieving
-            shallow information about houses from the website.
-        house_items_deep (NamedItemsDict, optional): An object containing the necessary configurations for retrieving
-            deep information about houses from the website. Defaults to None.
-    """
+    """Object containing the configuration for the scraper."""
 
     website_settings: WebsiteConfig
     search_results_items: SearchResultsItems
@@ -206,14 +196,7 @@ class ScraperConfig(ConfigObject):
 
     @classmethod
     def from_json(cls, json_path: Union[Path, str]):
-        """Create a `ScraperConfig` object from a JSON file.
-
-        Args:
-            json_path (Union[Path, str]): The path to the JSON file.
-
-        Returns:
-            ScraperConfig: A `ScraperConfig` object initialized with the data from the JSON file.
-        """
+        """Create a `ScraperConfig` object from a JSON file."""
         with open(json_path, "r") as file:
             data = json.load(file)
 
