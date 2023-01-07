@@ -11,19 +11,10 @@ To use the library, you'll need to create a ScraperConfig object with the necess
 For the time being, the library already provides a fully configured scraper for the Dutch housing market. To use it, you can import the get_funda_scraper function from the funda_scraper.py module. This module includes all the necessary configurations and functions to scrape the listings from the website www.funda.nl. Here is an example of how to use it:
 
 ```python
-from pathlib import Path
-
-from real_estate_scraper.logging_mgt import create_logger
 from real_estate_scraper.countries.netherlands.funda_scraper import get_funda_scraper
 
-module_path = Path(__file__)
-module_name = module_path.stem
-
-# create logger
-logger = create_logger(module_name)
-
 # create an instance of the Scraper class tailored to www.funda.nl
-scraper = get_funda_scraper(logger=logger)
+scraper = get_funda_scraper()
 
 """
 scrape 'deep' the first 3 results pages for the city of Rotterdam, 
