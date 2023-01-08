@@ -13,13 +13,13 @@ from tqdm import tqdm
 
 from real_estate_scraper.configuration import ScraperConfig
 from real_estate_scraper.html_handling import get_html
-from real_estate_scraper.logging_mgt import create_logger
+from real_estate_scraper.logging_mgmt import create_logger
 from real_estate_scraper.parsing import str_from_tag
-from real_estate_scraper.save import write_to_sqlite, to_csv
+from real_estate_scraper.save import write_to_sqlite, to_csv, create_folder
 from real_estate_scraper.utils import func_timer, get_timestamp, split_list
 
 TIMER_ACTIVE = True
-DOWNLOAD_FOLDER = Path.cwd().parent / "downloads"
+DOWNLOAD_FOLDER = Path.cwd() / "downloads"
 
 
 class Scraper:
@@ -109,29 +109,34 @@ class Scraper:
     @func_timer(active=TIMER_ACTIVE)
     def download_to_file(
             self,
-            filepath: Optional[str] = None,
             city: Optional[str] = None,
             pages: Union[None, int, list[int]] = None,
             deep=False,
-            shallow_batch_size: int = 5
+            shallow_batch_size: int = 5,
+            filepath: Optional[str] = None
     ):
         """
         Downloads listings a file.
         Args:
-            filepath (str, optional): Path to the file to write. Defaults to None.
             city (str, optional): City to download houses from. Defaults to None.
             pages (int, optional): Number of the shallow pages to scrape.
                 Defaults to None.
             deep (bool, optional): Whether to scrape deep. Defaults to False.
             shallow_batch_size (int, optional): Number of shallow pages to scrape in a
             batch. The listings will be downloaded in batches of shallow_batch_size.
+            filepath (str, optional): Path to the file to write. Defaults to None.
         """
 
         if filepath is None:
+            msg = create_folder(DOWNLOAD_FOLDER)
+            if msg:
+                self.logger.info(msg)
+
             deep_str = "deep" if deep else "shallow"
             pages_str = "_".join(map(str, pages)) if pages else "all"
             city_str = city if city else "all"
             date_str = get_timestamp(date_only=True)
+
             filepath = (
                     DOWNLOAD_FOLDER
                     / f"City_{city_str}_{deep_str}_pages_{pages_str}_{date_str}.csv"
@@ -143,27 +148,31 @@ class Scraper:
     @func_timer(active=TIMER_ACTIVE)
     def download_to_db(
             self,
-            db_path: Optional[str] = None,
-            table_name: Optional[str] = None,
             city: Optional[str] = None,
             pages: Union[None, int, list[int]] = None,
-            shallow_batch_size: int = 5,
             deep=False,
+            shallow_batch_size: int = 5,
+            db_path: Optional[str] = None,
+            table_name: Optional[str] = None,
     ):
         """
         Downloads listings to a SQLite database.
         Args:
-            db_path (str, optional): Path to the database to write. Defaults to None.
-            table_name (str, optional): Name of the table to write. Defaults to None.
             city (str, optional): City to download houses from. Defaults to None.
             pages (int, optional): Number of shallow pages to scrape. Defaults to None.
             deep (bool, optional): Whether to scrape deep. Defaults to False.
             shallow_batch_size (int, optional): Number of shallow pages to scrape in a
             batch. The listings will be downloaded in batches of shallow_batch_size.
+            db_path (str, optional): Path to the database to write. Defaults to None.
+            table_name (str, optional): Name of the table to write. Defaults to None.
         """
 
         if db_path is None:
-            db_path = str(DOWNLOAD_FOLDER / f"{self.config.website_settings.name}.db")
+            msg = create_folder(DOWNLOAD_FOLDER)
+            if msg:
+                self.logger.info(msg)
+            db_path = (DOWNLOAD_FOLDER /
+                       f"{self.config.website_settings.name}.db").as_posix()
 
         if table_name is None:
             deep_str = "deep" if deep else "shallow"
