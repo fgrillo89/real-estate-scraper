@@ -11,7 +11,7 @@ from bs4 import BeautifulSoup
 from bs4.element import SoupStrainer, Tag
 from tqdm import tqdm
 
-from real_estate_scraper.configuration import ScraperConfig, NamedItemsDict
+from real_estate_scraper.configuration import ScraperConfig
 from real_estate_scraper.html_handling import get_html
 from real_estate_scraper.logging_mgt import create_logger
 from real_estate_scraper.parsing import str_from_tag
@@ -65,25 +65,6 @@ class Scraper:
             logger = create_logger(self.config.website_settings.name)
         self.logger = logger
 
-    def _get_city_url(self, city: Optional[str] = None, page: int = 1) -> str:
-        if city is None:
-            city = self.config.website_settings.default_city
-        return self.config.website_settings.city_search_url_template.format(
-            city=city, page=page
-        )
-
-    async def _get_soup(self, url: str) -> BeautifulSoup:
-        async with self.semaphore:
-            async with self.limiter:
-                html = await get_html(url, header=self.config.website_settings.header)
-        self.logger.info(f"Done requesting {url}")
-        return BeautifulSoup(html, "lxml", parse_only=self.parse_only)
-
-    async def _get_city_soup(self, city: str, page: int) -> tuple[str, BeautifulSoup]:
-        url = self._get_city_url(city, page)
-        soup = await self._get_soup(url=url)
-        return url, soup
-
     @func_timer(active=TIMER_ACTIVE)
     def scrape_city(self,
                     city: Optional[str] = None,
@@ -119,90 +100,11 @@ class Scraper:
             Name: Price, dtype: object
 
         """
-        chunks = asyncio.run(self._get_pages_batches(city, pages, shallow_batch_size))
+
         dataframes = []
-        for chunk in chunks:
-            self.semaphore = Semaphore(self.max_active_requests)
-            df = asyncio.run(self._scrape_city_async(city, pages=chunk, deep=deep))
+        for df in self._dataframe_generator(city, pages, deep, shallow_batch_size):
             dataframes.append(df)
         return pd.concat(dataframes)
-
-    async def _get_num_pages_and_listings(self, city: Optional[str] = None) \
-            -> Tuple[int, int]:
-        _, soup = await self._get_city_soup(city=city, page=1)
-        num_pages = self.config.search_results_items["number_of_pages"].retrieve(soup)
-        num_listings = self.config.search_results_items["number_of_listings"].retrieve(
-            soup
-        )
-        return num_pages, num_listings
-
-    async def _get_houses_from_page_shallow(
-            self, city: str = None, page: int = 1
-    ) -> list[dict[str, str]]:
-        url, soup = await self._get_city_soup(city=city, page=page)
-        listings = self.config.search_results_items["listings"].retrieve(soup)
-        houses = [
-            self._get_house_items_from_soup(listing)
-            for listing in listings
-        ]
-        for house in houses:
-            house["url_shallow"] = url
-            house["page_shallow"] = page
-        return houses
-
-    async def _get_house_from_url_deep(self, url: str) -> dict[str, str]:
-        soup = await self._get_soup(url)
-        house = self._get_house_items_from_soup(soup, deep=True)
-        house["url_deep"] = url
-        return house
-
-    async def _scrape_city_async(
-            self,
-            city: Optional[str] = None,
-            pages: Union[None, int, list[int]] = None,
-            deep=False
-    ) -> pd.DataFrame:
-
-        pages = await self._get_pages_batches(city, pages)
-
-        houses = await asyncio.gather(
-            *(self._get_houses_from_page_shallow(city, i) for i in pages)
-        )
-
-        house_data = list(chain(*houses))
-
-        df_shallow = pd.DataFrame(house_data)
-        df_shallow["url_deep"] = df_shallow.href.transform(
-            lambda x: self.config.website_settings.main_url + x
-        ).values
-        df_shallow["TimeStampShallow"] = get_timestamp()
-
-        if not deep:
-            return df_shallow
-
-        urls = df_shallow.url_deep.values
-        houses = await asyncio.gather(
-            *(self._get_house_from_url_deep(url) for url in urls)
-        )
-        df_deep = pd.DataFrame(houses)
-        df_deep["TimeStampDeep"] = get_timestamp()
-        return df_shallow.merge(df_deep, on="url_deep")
-
-    async def _get_pages_batches(self,
-                                 city: Optional[str] = None,
-                                 pages: Union[None, int, list[int]] = None,
-                                 batch_size: Optional[int] = None) -> list[int]:
-        if isinstance(pages, int):
-            pages = [pages]
-
-        if pages is None:
-            max_number_of_pages, _ = await self._get_num_pages_and_listings(city)
-            pages = range(1, max_number_of_pages + 1)
-
-        if batch_size:
-            return split_list(pages, chunksize=batch_size)
-
-        return pages
 
     @func_timer(active=TIMER_ACTIVE)
     def download_to_file(
@@ -211,7 +113,7 @@ class Scraper:
             city: Optional[str] = None,
             pages: Union[None, int, list[int]] = None,
             deep=False,
-            shallow_batch_size: int = 5,
+            shallow_batch_size: int = 5
     ):
         """
         Downloads listings a file.
@@ -235,11 +137,7 @@ class Scraper:
                     / f"City_{city_str}_{deep_str}_pages_{pages_str}_{date_str}.csv"
             )
 
-        chunks = asyncio.run(self._get_pages_batches(city, pages, shallow_batch_size))
-
-        for chunk in tqdm(chunks, total=len(chunks)):
-            self.semaphore = Semaphore(value=self.max_active_requests)
-            df = asyncio.run(self._scrape_city_async(city=city, pages=chunk, deep=deep))
+        for df in self._dataframe_generator(city, pages, deep, shallow_batch_size):
             to_csv(df, filepath=filepath)
 
     @func_timer(active=TIMER_ACTIVE)
@@ -273,12 +171,117 @@ class Scraper:
             date_str = get_timestamp(date_only=True).replace("-", "_")
             table_name = f"raw.{city_str}_{deep_str}_{date_str}"
 
+        for df in self._dataframe_generator(city, pages, deep, shallow_batch_size):
+            write_to_sqlite(df, database_name=db_path, table_name=table_name)
+
+    def _dataframe_generator(self,
+                             city: Optional[str] = None,
+                             pages: Optional[int] = None,
+                             deep=False,
+                             shallow_batch_size: int = 5) -> pd.DataFrame:
+
         chunks = asyncio.run(self._get_pages_batches(city, pages, shallow_batch_size))
 
         for chunk in tqdm(chunks, total=len(chunks)):
             self.semaphore = Semaphore(value=self.max_active_requests)
             df = asyncio.run(self._scrape_city_async(city=city, pages=chunk, deep=deep))
-            write_to_sqlite(df, database_name=db_path, table_name=table_name)
+            yield df
+
+    async def _get_pages_batches(self,
+                                 city: Optional[str] = None,
+                                 pages: Union[None, int, list[int]] = None,
+                                 batch_size: Optional[int] = None) -> list[int]:
+        if isinstance(pages, int):
+            pages = [pages]
+
+        if pages is None:
+            max_number_of_pages, _ = await self._get_num_pages_and_listings(city)
+            pages = range(1, max_number_of_pages + 1)
+
+        if batch_size:
+            return split_list(pages, chunksize=batch_size)
+
+        return pages
+
+    async def _scrape_city_async(
+            self,
+            city: Optional[str] = None,
+            pages: Union[None, int, list[int]] = None,
+            deep=False
+    ) -> pd.DataFrame:
+
+        pages = await self._get_pages_batches(city, pages)
+
+        houses = await asyncio.gather(
+            *(self._get_houses_from_page_shallow(city, i) for i in pages)
+        )
+
+        house_data = list(chain(*houses))
+
+        df_shallow = pd.DataFrame(house_data)
+        df_shallow["url_deep"] = df_shallow.href.transform(
+            lambda x: self.config.website_settings.main_url + x
+        ).values
+        df_shallow["TimeStampShallow"] = get_timestamp()
+
+        if not deep:
+            return df_shallow
+
+        urls = df_shallow.url_deep.values
+        houses = await asyncio.gather(
+            *(self._get_house_from_url_deep(url) for url in urls)
+        )
+        df_deep = pd.DataFrame(houses)
+        df_deep["TimeStampDeep"] = get_timestamp()
+        return df_shallow.merge(df_deep, on="url_deep")
+
+    async def _get_city_soup(self, city: str, page: int) -> tuple[str, BeautifulSoup]:
+        url = self._get_city_url(city, page)
+        soup = await self._get_soup(url=url)
+        return url, soup
+
+    async def _get_soup(self, url: str) -> BeautifulSoup:
+        async with self.semaphore:
+            async with self.limiter:
+                html = await get_html(url, header=self.config.website_settings.header)
+        self.logger.info(f"Done requesting {url}")
+        return BeautifulSoup(html, "lxml", parse_only=self.parse_only)
+
+    def _get_city_url(self, city: Optional[str] = None, page: int = 1) -> str:
+        if city is None:
+            city = self.config.website_settings.default_city
+        return self.config.website_settings.city_search_url_template.format(
+            city=city, page=page
+        )
+
+    async def _get_num_pages_and_listings(self, city: Optional[str] = None) \
+            -> Tuple[int, int]:
+        _, soup = await self._get_city_soup(city=city, page=1)
+        num_pages = self.config.search_results_items["number_of_pages"].retrieve(soup)
+        num_listings = self.config.search_results_items["number_of_listings"].retrieve(
+            soup
+        )
+        return num_pages, num_listings
+
+    async def _get_houses_from_page_shallow(
+            self, city: str = None, page: int = 1
+    ) -> list[dict[str, str]]:
+        url, soup = await self._get_city_soup(city=city, page=page)
+        listings = self.config.search_results_items["listings"].retrieve(soup)
+        houses = [
+            self._get_house_items_from_soup(listing)
+            for listing in listings
+        ]
+        for house in houses:
+            house["url_shallow"] = url
+            house["page_shallow"] = page
+        return houses
+
+    async def _get_house_from_url_deep(self, url: str) -> dict[str, str]:
+        soup = await self._get_soup(url)
+        house = self._get_house_items_from_soup(soup, deep=True)
+        house["url_deep"] = url
+        return house
 
     def _from_href_to_url(self, href: str) -> str:
         return self.config.website_settings.main_url + href
