@@ -1,28 +1,30 @@
 import asyncio
 import sqlite3
 from pathlib import Path
+from typing import Optional
+
 import pandas as pd
 
 
-def create_folder(folder_path: str):
-    # Create a Path object from the folder path
+def create_folder(folder_path: str) -> Optional[str]:
     path = Path(folder_path)
 
-    # If the folder does not exist, create it
+    msg = None
+
     if not path.exists():
         path.mkdir()
+        msg = f"Folder {folder_path} was created as it did not exist"
+
+    return msg
 
 
 def file_exists(filepath: str) -> bool:
-    # Create a Path object from the file path
     file = Path(filepath)
-
-    # Check if the file exists and is a regular file (not a directory or something else)
     return file.exists() and file.is_file()
 
 
 def to_csv(
-    df, filepath, index=False, mode="a", encoding="utf-8", header=True, **kwargs
+        df, filepath, index=False, mode="a", encoding="utf-8", header=True, **kwargs
 ):
     if file_exists(filepath):
         header = False
@@ -32,7 +34,7 @@ def to_csv(
 
 
 async def df_to_file_async(
-    df: pd.DataFrame, filepath, file_format: str = "csv", **kwargs
+        df: pd.DataFrame, filepath, file_format: str = "csv", **kwargs
 ):
     FORMAT_MAP = {"csv": to_csv}
     return await asyncio.to_thread(FORMAT_MAP[file_format], df, filepath, **kwargs)
