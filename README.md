@@ -21,7 +21,7 @@ scrape 'deep' the first 3 results pages for the city of Rotterdam,
 and store the results in a DataFrame. Because there are 15 listings per results page, 
 this will scrape 45 websites 
 """
-df = scraper.scrape_city(city='Rotterdam', pages=[1, 2, 3], deep=True)
+df = scraper.download_to_dataframe(city='Rotterdam', pages=[1, 2, 3], deep=True)
 
 >>> df.columns
 Index(['Address', 'LivingArea', 'Price', 'href', 'PostCode', 'PlotSize',
