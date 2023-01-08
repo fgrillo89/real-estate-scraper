@@ -94,4 +94,3 @@ def get_funda_scraper(logger, **kwargs):
 
 if __name__ == "__main__":
     scraper = Scraper(config=funda_config)
-    df = scraper.scrape_city(city="Delft", pages=[1], method="shallow")
