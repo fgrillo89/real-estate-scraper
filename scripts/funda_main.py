@@ -9,4 +9,4 @@ module_name = module_path.stem
 logger = create_logger(module_name)
 scraper = get_funda_scraper(logger=logger)
 
-df = scraper.scrape_city(city=None, pages=1)
+df = scraper.download_to_dataframe(city=None, pages=1)

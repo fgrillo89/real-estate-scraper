@@ -90,7 +90,7 @@ class Scraper:
 
         Example:
             >>> scraper = Scraper(config)
-            >>> df = scraper.scrape_city("Delft")
+            >>> df = scraper.download_to_dataframe("Delft")
             >>> df.Price[0:5]
             0    € 375, 000 k.k.
             1    € 775, 000 k.k.
