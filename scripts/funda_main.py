@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from real_estate_scraper.logging_mgt import create_logger
+from real_estate_scraper.logging_mgmt import create_logger
 from real_estate_scraper.countries.netherlands.funda_scraper import \
     get_funda_scraper
 
