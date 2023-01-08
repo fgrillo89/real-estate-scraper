@@ -142,7 +142,7 @@ class Scraper:
         url, soup = await self._get_city_soup(city=city, page=page)
         listings = self.config.search_results_items["listings"].retrieve(soup)
         houses = [
-            self.get_house_attributes(listing, self.config.house_items_shallow)
+            self._get_house_items_from_soup(listing)
             for listing in listings
         ]
         for house in houses:
@@ -152,7 +152,7 @@ class Scraper:
 
     async def _get_house_from_url_deep(self, url: str) -> dict[str, str]:
         soup = await self._get_soup(url)
-        house = self.get_house_attributes(soup, self.config.house_items_deep)
+        house = self._get_house_items_from_soup(soup, deep=True)
         house["url_deep"] = url
         return house
 
@@ -283,37 +283,35 @@ class Scraper:
     def _from_href_to_url(self, href: str) -> str:
         return self.config.website_settings.main_url + href
 
-    def get_house_attributes(self,
-                             soup: BeautifulSoup,
-                             attributes_enum: NamedItemsDict) -> dict[str, str]:
+    def _get_house_items_from_soup(self,
+                                   soup: BeautifulSoup,
+                                   deep=False) -> dict[str, str]:
         """
-        Returns a dictionary of house attributes given a BeautifulSoup object.
+        Returns a dictionary of house items given a BeautifulSoup object.
         Args:
             soup (BeautifulSoup): A BeautifulSoup object.
-            attributes_enum (NamedItemsDict): A NamedItemsDict object.
+            deep (bool, optional): If True, retrieves house_items_shallow else
+            house_items_deep. Defaults to False.
         Returns:
             dict: A dictionary of house attributes.
         """
+        if deep:
+            named_items_dict = self.config.house_items_deep
+        else:
+            named_items_dict = self.config.house_items_shallow
 
-        total_items = len(attributes_enum)
         house = {}
 
-        for attribute in attributes_enum:
+        for item in named_items_dict:
             try:
-                retrieved_attribute = attribute.retrieve(soup)
+                retrieved_item = item.retrieve(soup)
             except Exception as e:
-                msg = f"{attribute.name} was not retrieve because {e}"
+                msg = f"{item.name} was not retrieved because {e}"
                 self.logger.info(msg)
-                retrieved_attribute = None
-            if isinstance(retrieved_attribute, Tag):
-                retrieved_attribute = str_from_tag(retrieved_attribute)
-            house[attribute.name] = retrieved_attribute
-
-        not_none_items = total_items - list(house.values()).count(None)
-
-        if not_none_items != total_items:
-            msg = f"Retrieved {not_none_items}/{total_items} items"
-            self.logger.info(msg)
+                retrieved_item = None
+            if isinstance(retrieved_item, Tag):
+                retrieved_item = str_from_tag(retrieved_item)
+            house[item.name] = retrieved_item
 
         if all([value is None for value in house.values()]):
             self.logger.warning("No items retrieved")
