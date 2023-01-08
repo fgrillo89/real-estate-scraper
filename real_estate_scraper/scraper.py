@@ -66,11 +66,11 @@ class Scraper:
         self.logger = logger
 
     @func_timer(active=TIMER_ACTIVE)
-    def scrape_city(self,
-                    city: Optional[str] = None,
-                    pages: Union[None, int, list[int]] = None,
-                    deep=False,
-                    shallow_batch_size: int = 5) -> pd.DataFrame:
+    def download_to_dataframe(self,
+                              city: Optional[str] = None,
+                              pages: Union[None, int, list[int]] = None,
+                              deep=False,
+                              shallow_batch_size: int = 5) -> pd.DataFrame:
         """Scrapes the website for the given city.
 
         Args:
