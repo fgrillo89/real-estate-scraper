@@ -191,9 +191,25 @@ class Scraper:
 
         chunks = asyncio.run(self._get_pages_batches(city, pages, shallow_batch_size))
 
+        num_items = self.num_house_items_shallow
+        item_names = self.house_items_shallow_names
+        if deep:
+            num_items += self.num_house_items_deep
+            item_names += self.house_items_deep_names
+
         for chunk in tqdm(chunks, total=len(chunks)):
             self.semaphore = Semaphore(value=self.max_active_requests)
             df = asyncio.run(self._scrape_city_async(city=city, pages=chunk, deep=deep))
+
+            nan_count = df[item_names].isnull().sum(axis=1)
+            success_rate = ((num_items - nan_count) / num_items).mean().round(2) * 100
+            max_items_retrieved = num_items - nan_count.min()
+            min_items_retrieved = num_items - nan_count.max()
+
+            self.logger.info(f"Batch mean items-retrieval success rate:"
+                             f" {success_rate}%\n"
+                             f"Max items retrieved: {max_items_retrieved}/{num_items}\n"
+                             f"Min items retrieved: {min_items_retrieved}/{num_items}")
             yield df
 
     async def _get_pages_batches(self,
@@ -328,3 +344,24 @@ class Scraper:
         if all([value is None for value in house.values()]):
             self.logger.warning("No items retrieved")
         return house
+
+    @property
+    def num_house_items_shallow(self) -> int:
+        return len(self.config.house_items_shallow)
+
+    @property
+    def num_house_items_deep(self) -> int:
+        if self.config.house_items_deep:
+            return len(self.config.house_items_deep)
+        return 0
+
+    @property
+    def house_items_shallow_names(self) -> int:
+        return self.config.house_items_shallow.names
+
+    @property
+    def house_items_deep_names(self) -> int:
+        if self.config.house_items_deep:
+            return self.config.house_items_deep.names
+        return 0
+
