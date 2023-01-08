@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Callable, Union, Optional, TypedDict, Dict
+from typing import Callable, Union, Optional, TypedDict, Dict, List
 from dataclasses import dataclass, field
 
 
@@ -91,16 +91,15 @@ class NamedItemsDict:
     """A dictionary-like class for storing and accessing named items.
 
     Args:
-        items (Dict[str, ItemContent]): A dictionary representing the items to be
-        stored in the dict. The keys of the dictionary correspond to the names of the
-        items, and the values are dictionaries containing the attributes of the items.
+        items (ItemContent): A dictionary storing the details of the item.
     """
+    _names: list[str]
 
     def __init__(self, **items: ItemContent):
-        self._items = []
-        for key in items:
-            setattr(self, key, Item(name=key, **items[key]))
-            self._items.append(key)
+        self._names = []
+        for item in items:
+            setattr(self, item, Item(name=item, **items[item]))
+            self._names.append(item)
 
     def map_func_to_attr(self, item: str, func: Callable):
         self[item].retrieve = func
@@ -110,14 +109,18 @@ class NamedItemsDict:
 
     def __iter__(self):
         for item in self.__dict__:
-            if item in self._items:
+            if item in self._names:
                 yield self.__dict__[item]
 
     def __len__(self):
-        return len(self._items)
+        return len(self._names)
 
     def __repr__(self):
         return f"NamedItemsDict(items={[attr.name for attr in self]})"
+
+    @property
+    def names(self):
+        return self._names
 
 
 class SearchResultsItems(NamedItemsDict):
