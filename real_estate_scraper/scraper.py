@@ -15,11 +15,11 @@ from real_estate_scraper.configuration import ScraperConfig, NamedItemsDict
 from real_estate_scraper.html_handling import get_html
 from real_estate_scraper.logging_mgmt import create_logger
 from real_estate_scraper.parsing import str_from_tag, get_retrieval_statistics
-from real_estate_scraper.save import write_to_sqlite, to_csv, create_folder
+from real_estate_scraper.save import write_to_sqlite, to_csv, create_folder, \
+    generate_filename, generate_table_name
 from real_estate_scraper.utils import func_timer, get_timestamp, split_list
 
 TIMER_ACTIVE = True
-DOWNLOAD_FOLDER = Path.cwd() / "downloads"
 
 House = Dict[str, str]
 
@@ -160,19 +160,12 @@ class Scraper:
         """
 
         if filepath is None:
-            msg = create_folder(DOWNLOAD_FOLDER)
+            path, msg = create_folder()
             if msg:
                 self.logger.info(msg)
 
-            deep_str = "deep" if deep else "shallow"
-            pages_str = "_".join(map(str, pages)) if pages else "all"
-            city_str = city if city else "all"
-            date_str = get_timestamp(date_only=True)
-
-            filepath = (
-                    DOWNLOAD_FOLDER
-                    / f"City_{city_str}_{deep_str}_pages_{pages_str}_{date_str}.csv"
-            )
+            filename = generate_filename(pages, city, deep, extension='.csv')
+            filepath = path / filename
 
         for df in self._dataframe_generator(city, pages, deep, shallow_batch_size):
             to_csv(df, filepath=filepath)
@@ -200,17 +193,13 @@ class Scraper:
         """
 
         if db_path is None:
-            msg = create_folder(DOWNLOAD_FOLDER)
+            path, msg = create_folder()
             if msg:
                 self.logger.info(msg)
-            db_path = (DOWNLOAD_FOLDER /
-                       f"{self.config.website_settings.name}.db").as_posix()
+            db_path = (path / f"{self.config.website_settings.name}.db").as_posix()
 
         if table_name is None:
-            deep_str = "deep" if deep else "shallow"
-            city_str = city if city else "all"
-            date_str = get_timestamp(date_only=True).replace("-", "_")
-            table_name = f"raw.{city_str}_{deep_str}_{date_str}"
+            table_name = generate_table_name(pages, city, deep, schema='raw')
 
         for df in self._dataframe_generator(city, pages, deep, shallow_batch_size):
             write_to_sqlite(df, database_name=db_path, table_name=table_name)
