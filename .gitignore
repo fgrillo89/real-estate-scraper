@@ -1,6 +1,7 @@
 *.db
 *.pyc
 *.txt
+*.csv
 /notebooks
 /.ipynb_checkpoints
 /downloads
