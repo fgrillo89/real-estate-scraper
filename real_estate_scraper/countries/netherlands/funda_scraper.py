@@ -3,12 +3,11 @@ import re
 from functools import partial
 from pathlib import Path
 
+from bs4 import BeautifulSoup
 from pipe import traverse, select, sort
 
 from real_estate_scraper.configuration import ScraperConfig
 from real_estate_scraper.scraper import Scraper
-
-DEBUG = True
 
 config_path = Path(__file__).parent / "funda_config.json"
 funda_config = ScraperConfig.from_json(config_path)
