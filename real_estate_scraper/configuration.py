@@ -1,12 +1,21 @@
 import json
 from pathlib import Path
-from typing import Callable, Union, Optional, TypedDict
+from typing import Union, Optional, TypedDict, Protocol, runtime_checkable
 from dataclasses import dataclass, field
+from collections.abc import Callable
+
+from bs4 import BeautifulSoup
 
 
 class ItemContent(TypedDict):
     type: str
     text_in_website: Optional[str]
+
+
+@runtime_checkable
+class RetrieveItemFn(Protocol):
+    def __call__(self, soup: BeautifulSoup) -> Union[str, int]:
+        pass
 
 
 @dataclass
@@ -48,7 +57,7 @@ class Item(ConfigObject):
     name: str
     type: str = field(default="text")
     text_in_website: Optional[str] = field(default=None, repr=False)
-    retrieve: Optional[Callable] = field(default=None, repr=False)
+    retrieve: Optional[RetrieveItemFn] = field(default=None, repr=False)
 
     def __post_init__(self):
         super(Item, self).__post_init__()
@@ -136,10 +145,10 @@ class SearchResultsItems(NamedItemsDict):
     """
 
     def __init__(
-        self,
-        number_of_pages: ItemContent,
-        number_of_listings: ItemContent,
-        listings: ItemContent,
+            self,
+            number_of_pages: ItemContent,
+            number_of_listings: ItemContent,
+            listings: ItemContent,
     ):
         super(SearchResultsItems, self).__init__(
             number_of_pages=number_of_pages,
@@ -152,12 +161,12 @@ class HouseItemsShallow(NamedItemsDict):
     """House items to be retrieved from the search results (shallow)."""
 
     def __init__(
-        self,
-        Address: ItemContent,
-        LivingArea: ItemContent,
-        Price: ItemContent,
-        href: ItemContent,
-        **kwargs: ItemContent,
+            self,
+            Address: ItemContent,
+            LivingArea: ItemContent,
+            Price: ItemContent,
+            href: ItemContent,
+            **kwargs: ItemContent,
     ):
         super(HouseItemsShallow, self).__init__(
             Address=Address, LivingArea=LivingArea, Price=Price, href=href, **kwargs
@@ -165,7 +174,7 @@ class HouseItemsShallow(NamedItemsDict):
 
 
 def config_factory(
-    config_type: str, config_dict: Union[dict, dict[str, ItemContent]]
+        config_type: str, config_dict: Union[dict, dict[str, ItemContent]]
 ) -> Union[ConfigObject, NamedItemsDict]:
     """Returns a configuration object for the given type.
 
