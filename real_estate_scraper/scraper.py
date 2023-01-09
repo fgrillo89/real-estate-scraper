@@ -14,7 +14,7 @@ from tqdm import tqdm
 from real_estate_scraper.configuration import ScraperConfig, NamedItemsDict
 from real_estate_scraper.html_handling import get_html
 from real_estate_scraper.logging_mgmt import create_logger
-from real_estate_scraper.parsing import str_from_tag, get_extraction_statistics
+from real_estate_scraper.parsing import str_from_tag, get_retrieval_statistics
 from real_estate_scraper.save import write_to_sqlite, to_csv, create_folder
 from real_estate_scraper.utils import func_timer, get_timestamp, split_list
 
@@ -231,8 +231,8 @@ class Scraper:
             self.semaphore = Semaphore(value=self.max_active_requests)
             df = asyncio.run(self._scrape_city_async(city=city, pages=chunk, deep=deep))
 
-            success_rate, max_items, min_items = get_extraction_statistics(df,
-                                                                           item_list)
+            success_rate, max_items, min_items = get_retrieval_statistics(df,
+                                                                          item_list)
 
             self.logger.info(f"Batch mean items-retrieval success rate:"
                              f" {success_rate}%\n"
@@ -354,11 +354,11 @@ class Scraper:
         return 0
 
     @property
-    def house_items_shallow_names(self) -> int:
+    def house_items_shallow_names(self) -> list[str]:
         return self.config.house_items_shallow.names
 
     @property
-    def house_items_deep_names(self) -> int:
+    def house_items_deep_names(self) -> list[str]:
         if self.config.house_items_deep:
             return self.config.house_items_deep.names
         return 0
