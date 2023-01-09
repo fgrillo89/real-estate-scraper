@@ -14,7 +14,7 @@ from tqdm import tqdm
 from real_estate_scraper.configuration import ScraperConfig, NamedItemsDict
 from real_estate_scraper.html_handling import get_html
 from real_estate_scraper.logging_mgmt import create_logger
-from real_estate_scraper.parsing import str_from_tag
+from real_estate_scraper.parsing import str_from_tag, get_extraction_statistics
 from real_estate_scraper.save import write_to_sqlite, to_csv, create_folder
 from real_estate_scraper.utils import func_timer, get_timestamp, split_list
 
@@ -223,25 +223,21 @@ class Scraper:
 
         chunks = asyncio.run(self._get_pages_batches(city, pages, shallow_batch_size))
 
-        num_items = self.num_house_items_shallow
-        item_names = self.house_items_shallow_names
+        item_list = self.house_items_shallow_names
         if deep:
-            num_items += self.num_house_items_deep
-            item_names += self.house_items_deep_names
+            item_list += self.house_items_deep_names
 
         for chunk in tqdm(chunks, total=len(chunks)):
             self.semaphore = Semaphore(value=self.max_active_requests)
             df = asyncio.run(self._scrape_city_async(city=city, pages=chunk, deep=deep))
 
-            nan_count = df[item_names].isnull().sum(axis=1)
-            success_rate = ((num_items - nan_count) / num_items).mean().round(2) * 100
-            max_items_retrieved = num_items - nan_count.min()
-            min_items_retrieved = num_items - nan_count.max()
+            success_rate, max_items, min_items = get_extraction_statistics(df,
+                                                                           item_list)
 
             self.logger.info(f"Batch mean items-retrieval success rate:"
                              f" {success_rate}%\n"
-                             f"Max items retrieved: {max_items_retrieved}/{num_items}\n"
-                             f"Min items retrieved: {min_items_retrieved}/{num_items}")
+                             f"Max items retrieved: {max_items}/{len(item_list)}\n"
+                             f"Min items retrieved: {min_items}/{len(item_list)}")
             yield df
 
     async def _get_pages_batches(self,

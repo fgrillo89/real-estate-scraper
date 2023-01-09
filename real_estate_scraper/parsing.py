@@ -1,6 +1,7 @@
+from typing import Union
+
 import pandas as pd
 from bs4.element import Tag
-from typing import Union
 
 from real_estate_scraper.configuration import NamedItemsDict
 
@@ -25,3 +26,15 @@ def parse_dataframe(house_attributes: NamedItemsDict, df: pd.DataFrame) -> pd.Da
                 df[attribute.name].str.replace("\D+", "", regex=True)
             )
     return df
+
+
+def get_retrieval_statistics(df: pd.DataFrame, items_list: list[str]) \
+        -> tuple[float, int, int]:
+    """Get the retrieval statistics for a list of items"""
+
+    nan_count = df[items_list].isnull().sum(axis=1)
+    num_items = len(items_list)
+    success_rate = ((num_items - nan_count) / num_items).mean().round(2) * 100
+    max_items = num_items - nan_count.min()
+    min_items = num_items - nan_count.max()
+    return success_rate, max_items, min_items
