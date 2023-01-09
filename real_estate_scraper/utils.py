@@ -8,7 +8,8 @@ from zoneinfo import ZoneInfo
 now = datetime.now
 
 
-def get_timestamp(date_only=False):
+def get_timestamp(date_only=False) -> str:
+    """Get timestamp with timezone info in iso8601 format as a string"""
     tms = now().replace(tzinfo=ZoneInfo("Europe/Amsterdam"))
     if date_only:
         return tms.strftime("%Y-%m-%d")
