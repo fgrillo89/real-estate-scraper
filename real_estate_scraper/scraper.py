@@ -3,7 +3,7 @@ import logging
 from asyncio import Semaphore
 from itertools import chain
 from pathlib import Path
-from typing import Union, Optional, Tuple
+from typing import Union, Optional, Tuple, Dict
 
 import pandas as pd
 from aiolimiter import AsyncLimiter
@@ -11,7 +11,7 @@ from bs4 import BeautifulSoup
 from bs4.element import SoupStrainer, Tag
 from tqdm import tqdm
 
-from real_estate_scraper.configuration import ScraperConfig
+from real_estate_scraper.configuration import ScraperConfig, NamedItemsDict
 from real_estate_scraper.html_handling import get_html
 from real_estate_scraper.logging_mgmt import create_logger
 from real_estate_scraper.parsing import str_from_tag
@@ -20,6 +20,38 @@ from real_estate_scraper.utils import func_timer, get_timestamp, split_list
 
 TIMER_ACTIVE = True
 DOWNLOAD_FOLDER = Path.cwd() / "downloads"
+
+House = Dict[str, str]
+
+
+def get_house_from_soup(soup: BeautifulSoup,
+                        named_items_dict: NamedItemsDict,
+                        logger: Optional[logging.Logger] = None) -> House:
+    """
+    Returns a House object given a BeautifulSoup object and a NamedItemsDict.
+    Args:
+        soup (BeautifulSoup): A BeautifulSoup object.
+        named_items_dict (NamedItemsDict): A NamedItemsDict with the items to retrieve
+        logger (Optional[logging.Logger]): A logger. Defaults to None.
+    Returns:
+        House: A dictionary of house items.
+    """
+    house = {}
+
+    for item in named_items_dict:
+        try:
+            retrieved_item = item.retrieve(soup)
+        except Exception as e:
+            msg = f"{item.name} was not retrieved because {e}"
+            logger.info(msg)
+            retrieved_item = None
+        if isinstance(retrieved_item, Tag):
+            retrieved_item = str_from_tag(retrieved_item)
+        house[item.name] = retrieved_item
+
+    if all([value is None for value in house.values()]):
+        logger.warning("No items retrieved")
+    return house
 
 
 class Scraper:
@@ -294,7 +326,9 @@ class Scraper:
         url, soup = await self._get_city_soup(city=city, page=page)
         listings = self.config.search_results_items["listings"].retrieve(soup)
         houses = [
-            self._get_house_items_from_soup(listing)
+            get_house_from_soup(listing,
+                                self.config.house_items_shallow,
+                                self.logger)
             for listing in listings
         ]
         for house in houses:
@@ -304,46 +338,14 @@ class Scraper:
 
     async def _get_house_from_url_deep(self, url: str) -> dict[str, str]:
         soup = await self._get_soup(url)
-        house = self._get_house_items_from_soup(soup, deep=True)
+        house = get_house_from_soup(soup,
+                                    self.config.house_items_deep,
+                                    self.logger)
         house["url_deep"] = url
         return house
 
     def _from_href_to_url(self, href: str) -> str:
         return self.config.website_settings.main_url + href
-
-    def _get_house_items_from_soup(self,
-                                   soup: BeautifulSoup,
-                                   deep=False) -> dict[str, str]:
-        """
-        Returns a dictionary of house items given a BeautifulSoup object.
-        Args:
-            soup (BeautifulSoup): A BeautifulSoup object.
-            deep (bool, optional): If True, retrieves house_items_shallow else
-            house_items_deep. Defaults to False.
-        Returns:
-            dict: A dictionary of house attributes.
-        """
-        if deep:
-            named_items_dict = self.config.house_items_deep
-        else:
-            named_items_dict = self.config.house_items_shallow
-
-        house = {}
-
-        for item in named_items_dict:
-            try:
-                retrieved_item = item.retrieve(soup)
-            except Exception as e:
-                msg = f"{item.name} was not retrieved because {e}"
-                self.logger.info(msg)
-                retrieved_item = None
-            if isinstance(retrieved_item, Tag):
-                retrieved_item = str_from_tag(retrieved_item)
-            house[item.name] = retrieved_item
-
-        if all([value is None for value in house.values()]):
-            self.logger.warning("No items retrieved")
-        return house
 
     @property
     def num_house_items_shallow(self) -> int:
@@ -364,4 +366,3 @@ class Scraper:
         if self.config.house_items_deep:
             return self.config.house_items_deep.names
         return 0
-
