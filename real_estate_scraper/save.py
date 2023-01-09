@@ -1,21 +1,67 @@
 import asyncio
 import sqlite3
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 
 import pandas as pd
 
+from real_estate_scraper.utils import get_timestamp
 
-def create_folder(folder_path: str) -> Optional[str]:
+DOWNLOAD_FOLDER = Path.cwd() / "downloads"
+FILE_EXTENSIONS = [".csv"]
+
+
+def generate_name_string(pages: Optional[list] = None,
+                         city: Optional[str] = None,
+                         deep: bool = False) -> str:
+    """Generate a name string for the scraping results"""
+    if isinstance(pages, int):
+        pages = [pages]
+
+    deep_str = "deep" if deep else "shallow"
+    pages_str = "_".join(map(str, pages)) if pages else "all"
+    city_str = city if city else "all"
+    date_str = get_timestamp(date_only=True)
+
+    return f"City_{city_str}_depth_{deep_str}_pages_{pages_str}_{date_str}"
+
+
+def generate_filename(pages: Optional[list] = None,
+                      city: Optional[str] = None,
+                      deep: bool = False,
+                      extension: str = ".csv") -> str:
+    """Generate a filename for the scraping results"""
+
+    if extension not in FILE_EXTENSIONS:
+        raise ValueError(f"Extension {extension} is not supported"
+                         f" (supported extensions: {FILE_EXTENSIONS})")
+
+    name_string = generate_name_string(pages=pages, city=city, deep=deep)
+    return f"{name_string}{extension}"
+
+
+def generate_table_name(pages: Optional[list] = None,
+                        city: Optional[str] = None,
+                        deep: bool = False,
+                        schema: str = 'raw') -> str:
+    """Generate a table name for the scraping results"""
+
+    return f"{schema}.{generate_name_string(pages=pages, city=city, deep=deep)}"
+
+
+def create_folder(folder_path: Optional[str] = DOWNLOAD_FOLDER) \
+        -> Tuple[Path, Optional[str]]:
+    """ Create folder if given path does not exist."""
+
     path = Path(folder_path)
-
-    msg = None
 
     if not path.exists():
         path.mkdir()
         msg = f"Folder {folder_path} was created as it did not exist"
+    else:
+        msg = None
 
-    return msg
+    return path, msg
 
 
 def file_exists(filepath: str) -> bool:
