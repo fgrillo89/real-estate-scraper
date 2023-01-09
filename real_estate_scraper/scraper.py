@@ -31,7 +31,8 @@ def get_house_from_soup(soup: BeautifulSoup,
     Returns a House object given a BeautifulSoup object and a NamedItemsDict.
     Args:
         soup (BeautifulSoup): A BeautifulSoup object.
-        named_items_dict (NamedItemsDict): A NamedItemsDict with the items to retrieve
+        named_items_dict (NamedItemsDict): A NamedItemsDict object storing the 
+        names of the items and the functions to retrieve them
         logger (Optional[logging.Logger]): A logger. Defaults to None.
     Returns:
         House: A dictionary of house items.
@@ -148,7 +149,7 @@ class Scraper:
             filepath: Optional[str] = None
     ):
         """
-        Downloads listings a file.
+        Downloads listings to file.
         Args:
             city (str, optional): City to download houses from. Defaults to None.
             pages (int, optional): Number of the shallow pages to scrape.
