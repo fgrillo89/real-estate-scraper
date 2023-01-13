@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "listings-scraper"
+name = "real-estate-scraper"
 version = "0.0.1"
-description = "a package for scraping listings from websites"
+description = "a package for scraping real estate listings from websites"
 authors = ["fgrillo89 <fabio.grillo89@gmail.com>"]
 readme = "README.md"
 packages = [{include = "real_estate_scraper"}]
@@ -20,6 +20,9 @@ sqlalchemy = "^1.4.45"
 datetime = "^4.9"
 tzdata = "^2022.7"
 
+
+[tool.poetry.group.dev.dependencies]
+jupyterlab = "^3.5.2"
 
 [build-system]
 requires = ["poetry-core"]
