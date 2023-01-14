@@ -199,6 +199,10 @@
       "text_in_website": "Neighbourhood",
       "type": "text"
     },
+    "TypeOfProperty": {
+      "text_in_website": "Type of property",
+      "type": "text"
+    },
     "Description": {
       "text_in_website": "Description",
       "type": "text"
