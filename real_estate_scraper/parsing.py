@@ -3,13 +3,13 @@ from typing import Union
 import pandas as pd
 from bs4.element import Tag
 
-from real_estate_scraper.configuration import NamedItemsDict
+from real_estate_scraper.configuration import NamedHouseItems
 
 
 def str_from_tag(tag: Tag, strip=True, **kwargs) -> Union[None, str]:
     """Get the text of a BeautifulSoup tag"""
-    if tag is None:
-        return None
+    if not isinstance(tag, Tag):
+        return tag
 
     try:
         text = tag.get_text(strip=strip, **kwargs)
@@ -18,7 +18,7 @@ def str_from_tag(tag: Tag, strip=True, **kwargs) -> Union[None, str]:
         print(e)
 
 
-def parse_dataframe(house_attributes: NamedItemsDict, df: pd.DataFrame) -> pd.DataFrame:
+def parse_dataframe(house_attributes: NamedHouseItems, df: pd.DataFrame) -> pd.DataFrame:
     """Convert the values in the dataframe to the appropriate data type."""
     for attribute in house_attributes:
         if attribute.type == "numeric":
