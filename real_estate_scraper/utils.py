@@ -1,7 +1,8 @@
 from datetime import datetime
-from functools import wraps
+from functools import wraps, reduce
 from math import ceil
 from time import perf_counter
+from typing import Callable
 from zoneinfo import ZoneInfo
 
 
@@ -32,6 +33,12 @@ def func_timer(active=True):
         return wrapper
 
     return inner
+
+
+def compose_functions(*func: Callable) -> Callable:
+    def compose(f, g):
+        return lambda x: f(g(x))
+    return reduce(compose, func, lambda x: x)
 
 
 def split_list(input_list: list, chunksize: int) -> list:
