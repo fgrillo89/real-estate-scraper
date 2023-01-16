@@ -1,11 +1,12 @@
 import json
-from pathlib import Path
-from typing import Union, Optional, TypedDict, Protocol, runtime_checkable
-from dataclasses import dataclass, field
 from collections.abc import Callable
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Union, Optional, TypedDict, Protocol, runtime_checkable, Dict
 
 from bs4 import BeautifulSoup
 
+House = Dict[str, str]
 
 class ItemContent(TypedDict):
     type: str
@@ -96,7 +97,7 @@ class WebsiteConfig(ConfigObject):
     parse_only: Optional[list] = None
 
 
-class NamedItemsDict:
+class NamedHouseItems:
     """A dictionary-like class for storing and accessing named items.
 
     Args:
@@ -125,14 +126,26 @@ class NamedItemsDict:
         return len(self._names)
 
     def __repr__(self):
-        return f"NamedItemsDict(items={[attr.name for attr in self]})"
+        return f"NamedHouseItems(items={[item.name for item in self]})"
+
+    def retrieve_all(self, soup: BeautifulSoup) -> House:
+        house = {}
+        for item in self:
+            try:
+                retrieved_item = item.retrieve(soup)
+            except Exception as e:
+                msg = f"{item.name} was not retrieved because {e}"
+                print(msg)
+                retrieved_item = None
+            house[item.name] = retrieved_item
+        return house
 
     @property
     def names(self):
         return self._names
 
 
-class SearchResultsItems(NamedItemsDict):
+class SearchResultsHouseItems(NamedHouseItems):
     """General items of the websites containing the search results (shallow pages).
 
     Args:
@@ -150,14 +163,14 @@ class SearchResultsItems(NamedItemsDict):
             number_of_listings: ItemContent,
             listings: ItemContent,
     ):
-        super(SearchResultsItems, self).__init__(
+        super(SearchResultsHouseItems, self).__init__(
             number_of_pages=number_of_pages,
             number_of_listings=number_of_listings,
             listings=listings,
         )
 
 
-class HouseItemsShallow(NamedItemsDict):
+class HouseHouseItemsShallow(NamedHouseItems):
     """House items to be retrieved from the search results (shallow)."""
 
     def __init__(
@@ -168,14 +181,14 @@ class HouseItemsShallow(NamedItemsDict):
             href: ItemContent,
             **kwargs: ItemContent,
     ):
-        super(HouseItemsShallow, self).__init__(
+        super(HouseHouseItemsShallow, self).__init__(
             Address=Address, LivingArea=LivingArea, Price=Price, href=href, **kwargs
         )
 
 
 def config_factory(
         config_type: str, config_dict: Union[dict, dict[str, ItemContent]]
-) -> Union[ConfigObject, NamedItemsDict]:
+) -> Union[ConfigObject, NamedHouseItems]:
     """Returns a configuration object for the given type.
 
     Args:
@@ -185,14 +198,14 @@ def config_factory(
         config_dict (dict): The data to use for initializing the object.
 
     Returns:
-        Union[ConfigObject, NamedItemsDict]: A `ConfigObject` subclass or a
+        Union[ConfigObject, NamedHouseItems]: A `ConfigObject` subclass or a
         `NamedItemsDict` object initialized with the given data.
     """
     config_type_map = {
         "website_settings": WebsiteConfig,
-        "search_results_items": SearchResultsItems,
-        "house_items_shallow": HouseItemsShallow,
-        "house_items_deep": NamedItemsDict,
+        "search_results_items": SearchResultsHouseItems,
+        "house_items_shallow": HouseHouseItemsShallow,
+        "house_items_deep": NamedHouseItems,
     }
     return config_type_map[config_type](**config_dict)
 
@@ -202,9 +215,9 @@ class ScraperConfig(ConfigObject):
     """Object containing the configuration for the scraper."""
 
     website_settings: WebsiteConfig
-    search_results_items: SearchResultsItems
-    house_items_shallow: HouseItemsShallow
-    house_items_deep: Optional[NamedItemsDict]
+    search_results_items: SearchResultsHouseItems
+    house_items_shallow: HouseHouseItemsShallow
+    house_items_deep: Optional[NamedHouseItems]
 
     @classmethod
     def from_json(cls, json_path: Union[Path, str]):
