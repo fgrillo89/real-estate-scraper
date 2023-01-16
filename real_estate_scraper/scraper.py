@@ -2,56 +2,23 @@ import asyncio
 import logging
 from asyncio import Semaphore
 from itertools import chain
-from typing import Union, Optional, Tuple, Dict
+from typing import Union, Optional, Tuple
 
 import pandas as pd
 from aiolimiter import AsyncLimiter
 from bs4 import BeautifulSoup
-from bs4.element import SoupStrainer, Tag
+from bs4.element import SoupStrainer
 from tqdm import tqdm
 
-from real_estate_scraper.configuration import ScraperConfig, NamedItemsDict
-from real_estate_scraper.html_handling import get_html
+from real_estate_scraper.configuration import ScraperConfig, House
+from real_estate_scraper.html_handling import get_response
 from real_estate_scraper.logging_mgmt import create_logger
-from real_estate_scraper.parsing import str_from_tag, get_retrieval_statistics
+from real_estate_scraper.parsing import get_retrieval_statistics
 from real_estate_scraper.save import write_to_sqlite, to_csv, create_folder, \
     generate_filename, generate_table_name
 from real_estate_scraper.utils import func_timer, get_timestamp, split_list
 
 TIMER_ACTIVE = True
-
-House = Dict[str, str]
-
-
-def get_house_from_soup(soup: BeautifulSoup,
-                        named_items_dict: NamedItemsDict,
-                        logger: Optional[logging.Logger] = None) -> House:
-    """
-    Returns a House object given a BeautifulSoup object and a NamedItemsDict.
-    Args:
-        soup (BeautifulSoup): A BeautifulSoup object.
-        named_items_dict (NamedItemsDict): A NamedItemsDict object storing the 
-        names of the items and the functions to retrieve them
-        logger (Optional[logging.Logger]): A logger. Defaults to None.
-    Returns:
-        House: A dictionary of house items.
-    """
-    house = {}
-
-    for item in named_items_dict:
-        try:
-            retrieved_item = item.retrieve(soup)
-        except Exception as e:
-            msg = f"{item.name} was not retrieved because {e}"
-            logger.info(msg)
-            retrieved_item = None
-        if isinstance(retrieved_item, Tag):
-            retrieved_item = str_from_tag(retrieved_item)
-        house[item.name] = retrieved_item
-
-    if all([value is None for value in house.values()]):
-        logger.warning("No items retrieved")
-    return house
 
 
 class Scraper:
@@ -285,9 +252,9 @@ class Scraper:
     async def _get_soup(self, url: str) -> BeautifulSoup:
         async with self.semaphore:
             async with self.limiter:
-                html = await get_html(url, header=self.config.website_settings.header)
+                response = await get_response(url, header=self.config.website_settings.header)
         self.logger.info(f"Done requesting {url}")
-        return BeautifulSoup(html, "lxml", parse_only=self.parse_only)
+        return BeautifulSoup(response.text, "lxml", parse_only=self.parse_only)
 
     def _get_city_url(self, city: Optional[str] = None, page: int = 1) -> str:
         if city is None:
@@ -305,27 +272,18 @@ class Scraper:
         )
         return num_pages, num_listings
 
-    async def _get_houses_from_page_shallow(
-            self, city: str = None, page: int = 1
-    ) -> list[dict[str, str]]:
+    async def _get_houses_from_page_shallow(self, city: str = None, page: int = 1) -> list[House]:
         url, soup = await self._get_city_soup(city=city, page=page)
         listings = self.config.search_results_items["listings"].retrieve(soup)
-        houses = [
-            get_house_from_soup(listing,
-                                self.config.house_items_shallow,
-                                self.logger)
-            for listing in listings
-        ]
+        houses = [self.config.house_items_shallow.retrieve_all(listing) for listing in listings]
         for house in houses:
             house["url_shallow"] = url
             house["page_shallow"] = page
         return houses
 
-    async def _get_house_from_url_deep(self, url: str) -> dict[str, str]:
+    async def _get_house_from_url_deep(self, url: str) -> House:
         soup = await self._get_soup(url)
-        house = get_house_from_soup(soup,
-                                    self.config.house_items_deep,
-                                    self.logger)
+        house = self.config.house_items_deep.retrieve_all(soup)
         house["url_deep"] = url
         return house
 
@@ -344,10 +302,10 @@ class Scraper:
 
     @property
     def house_items_shallow_names(self) -> list[str]:
-        return self.config.house_items_shallow.names
+        return list(self.config.house_items_shallow.names)
 
     @property
     def house_items_deep_names(self) -> list[str]:
         if self.config.house_items_deep:
-            return self.config.house_items_deep.names
-        return 0
+            return list(self.config.house_items_deep.names)
+
