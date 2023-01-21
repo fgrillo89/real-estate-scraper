@@ -19,6 +19,7 @@ matplotlib = "^3.6.2"
 sqlalchemy = "^1.4.45"
 datetime = "^4.9"
 tzdata = "^2022.7"
+pytest = "^7.2.1"
 
 
 [tool.poetry.group.dev.dependencies]

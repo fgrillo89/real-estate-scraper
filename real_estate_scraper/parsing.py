@@ -24,26 +24,20 @@ def extract_numeric_value(string: str, decimal_delimiter: str = ".",
     """Extracts the numeric value from a string, takes into account the unit of
     measure, the thousands' delimiter, the decimal delimiter, and ignores any character
     or space before a digit"""
+
+    if decimal_delimiter == thousands_delimiter:
+        raise ValueError("Decimal and group delimiters cannot be the same")
+
     if not string:
         return None
     string = string.replace(thousands_delimiter, "")
     string = string.replace(decimal_delimiter, ".")
-    match = re.search(r'[^\S\d]*([-+]?\d*\.\d+|\d+)', string)
+    match = re.search(r'(?<![^\s])\d+(?:\.\d+)?(?![^\s])', string)
     if match:
-        numeric_value = float(match.group(1))
+        numeric_value = float(match.group())
     else:
         return None
     return numeric_value
-
-
-def parse_dataframe(house_attributes: NamedHouseItems, df: pd.DataFrame) -> pd.DataFrame:
-    """Convert the values in the dataframe to the appropriate data type."""
-    for attribute in house_attributes:
-        if attribute.type == "numeric":
-            df[attribute.name] = pd.to_numeric(
-                df[attribute.name].str.replace("\D+", "", regex=True)
-            )
-    return df
 
 
 def get_retrieval_statistics(df: pd.DataFrame, items_list: list[str]) \
