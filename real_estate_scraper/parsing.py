@@ -1,3 +1,4 @@
+import re
 from typing import Union
 
 import pandas as pd
@@ -16,6 +17,22 @@ def str_from_tag(tag: Tag, strip=True, **kwargs) -> Union[None, str]:
         return text
     except AttributeError as e:
         print(e)
+
+
+def extract_numeric_value_from_string(string: str, decimal_delimiter: str = ".",
+                                      group_delimiter: str = ","):
+    """Extracts a numeric value, including decimal parts if any, from a string
+    containing delimiters and optional unit of measure"""
+    if not string:
+        return None
+    if decimal_delimiter == group_delimiter:
+        raise ValueError("Decimal and group delimiters cannot be the same")
+    string = string.replace(group_delimiter, "")
+    match_list = re.findall('[\d' + decimal_delimiter + ']+', string)
+    if match_list:
+        string = ''.join(match_list)
+        string = string.replace(decimal_delimiter, '.')
+        return float(string)
 
 
 def parse_dataframe(house_attributes: NamedHouseItems, df: pd.DataFrame) -> pd.DataFrame:
@@ -38,3 +55,6 @@ def get_retrieval_statistics(df: pd.DataFrame, items_list: list[str]) \
     max_items = num_items - nan_count.min()
     min_items = num_items - nan_count.max()
     return success_rate, max_items, min_items
+
+
+
