@@ -1,5 +1,5 @@
 import re
-from typing import Union
+from typing import Union, Optional
 
 import pandas as pd
 from bs4.element import Tag
@@ -19,20 +19,21 @@ def str_from_tag(tag: Tag, strip=True, **kwargs) -> Union[None, str]:
         print(e)
 
 
-def extract_numeric_value_from_string(string: str, decimal_delimiter: str = ".",
-                                      group_delimiter: str = ","):
-    """Extracts a numeric value, including decimal parts if any, from a string
-    containing delimiters and optional unit of measure"""
+def extract_numeric_value(string: str, decimal_delimiter: str = ".",
+                          thousands_delimiter: str = ",") -> Optional[float]:
+    """Extracts the numeric value from a string, takes into account the unit of
+    measure, the thousands' delimiter, the decimal delimiter, and ignores any character
+    or space before a digit"""
     if not string:
         return None
-    if decimal_delimiter == group_delimiter:
-        raise ValueError("Decimal and group delimiters cannot be the same")
-    string = string.replace(group_delimiter, "")
-    match_list = re.findall('[\d' + decimal_delimiter + ']+', string)
-    if match_list:
-        string = ''.join(match_list)
-        string = string.replace(decimal_delimiter, '.')
-        return float(string)
+    string = string.replace(thousands_delimiter, "")
+    string = string.replace(decimal_delimiter, ".")
+    match = re.search(r'[^\S\d]*([-+]?\d*\.\d+|\d+)', string)
+    if match:
+        numeric_value = float(match.group(1))
+    else:
+        return None
+    return numeric_value
 
 
 def parse_dataframe(house_attributes: NamedHouseItems, df: pd.DataFrame) -> pd.DataFrame:
@@ -55,6 +56,3 @@ def get_retrieval_statistics(df: pd.DataFrame, items_list: list[str]) \
     max_items = num_items - nan_count.min()
     min_items = num_items - nan_count.max()
     return success_rate, max_items, min_items
-
-
-
