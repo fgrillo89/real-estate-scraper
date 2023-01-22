@@ -1,7 +1,6 @@
-from real_estate_scraper.parsing import extract_numeric_value
+from real_estate_scraper.parsing import extract_numeric_value, extract_rooms_and_bedrooms
 
 import pytest
-from typing import Optional
 
 
 class TestExtractNumericValue:
@@ -30,6 +29,21 @@ class TestExtractNumericValue:
             else:
                 try:
                     result = extract_numeric_value(**test_case)
-                    assert result == expected, f"Test case {i} failed: expected {expected} but got {result}"
+                    assert result == expected, f"Test case {i} failed: expected " \
+                                               f"{expected} but got {result}"
                 except AssertionError as e:
                     pytest.fail(str(e))
+
+
+def test_extract_rooms_and_bedrooms():
+    test_cases = [
+        ("4 rooms (3 bedrooms)", (4, 3)),
+        ("6 rooms", (6, None)),
+        ("", (None, None)),
+        ("3", (None, None))
+    ]
+
+    for string, expected_result in test_cases:
+        result = extract_rooms_and_bedrooms(string)
+        assert result == expected_result, f'For input "{string}", expected ' \
+                                          f'"{expected_result}" but got "{result}"'

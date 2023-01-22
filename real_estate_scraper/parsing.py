@@ -1,5 +1,5 @@
 import re
-from typing import Union, Optional
+from typing import Union, Optional, Tuple
 
 import pandas as pd
 from bs4.element import Tag
@@ -38,6 +38,22 @@ def extract_numeric_value(string: str, decimal_delimiter: str = ".",
     else:
         return None
     return numeric_value
+
+
+def extract_rooms_and_bedrooms(string: str) -> Optional[Tuple[float, Optional[float]]]:
+
+    rooms, bedrooms = None, None
+
+    if not string:
+        return rooms, bedrooms
+
+    match = re.search(r"(\d+) rooms(?: \((\d+) bedrooms\))?", string)
+
+    if match:
+        rooms = float(match.group(1))
+        bedrooms = float(match.group(2)) if match.group(2) is not None else None
+
+    return rooms, bedrooms
 
 
 def get_retrieval_statistics(df: pd.DataFrame, items_list: list[str]) \
