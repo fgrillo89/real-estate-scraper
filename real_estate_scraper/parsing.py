@@ -45,7 +45,7 @@ def extract_rooms_and_bedrooms(string: str) -> Optional[Tuple[float, Optional[fl
     if not string:
         return rooms, bedrooms
 
-    match = re.search(r"(\d+) rooms(?: \((\d+) bedrooms\))?", string)
+    match = re.search(r"(\d+) room[s]?(?: \((\d+) bedroom[s]?\))?", string)
 
     if match:
         rooms = float(match.group(1))

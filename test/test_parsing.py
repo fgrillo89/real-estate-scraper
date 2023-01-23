@@ -39,6 +39,8 @@ def test_extract_rooms_and_bedrooms():
     test_cases = [
         ("4 rooms (3 bedrooms)", (4, 3)),
         ("6 rooms", (6, None)),
+        ("5 rooms (1 bedroom)", (5, 1)),
+        ("1 room (1 bedroom)", (1, 1)),
         ("", (None, None)),
         ("3", (None, None))
     ]
