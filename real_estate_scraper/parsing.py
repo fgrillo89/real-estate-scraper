@@ -56,7 +56,6 @@ def extract_rooms_and_bedrooms(string: str) -> Optional[Tuple[float, Optional[fl
 
 def extract_text_before_and_within_brackets(string: str) \
         -> Optional[Tuple[str, Optional[str]]]:
-
     before_brackets, within_brackets = None, None
 
     if not string:
@@ -70,6 +69,18 @@ def extract_text_before_and_within_brackets(string: str) \
 
     return before_brackets, within_brackets
 
+
+def extract_dutch_postcode_and_city(string: str) \
+        -> Optional[Tuple[str, Optional[str], str]]:
+    if not string:
+        return None
+
+    match = re.search(r"(\d\d\d\d)(?:\s([A-Z]{2}))?\s([^\d]{2,})", string)
+
+    if match:
+        return match.groups()
+
+    return None
 
 
 def get_retrieval_statistics(
