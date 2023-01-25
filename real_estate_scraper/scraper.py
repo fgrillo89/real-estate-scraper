@@ -47,8 +47,8 @@ class Scraper:
     def __init__(
             self,
             config: ScraperConfig,
-            max_active_requests: int = 4,
-            requests_per_sec: int = 4,
+            max_active_requests: int = 5,
+            requests_per_sec: int = 5,
             logger: Optional[logging.Logger] = None,
     ):
 
