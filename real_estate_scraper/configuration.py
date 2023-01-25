@@ -129,6 +129,15 @@ class NamedHouseItems:
     def __repr__(self):
         return f"NamedHouseItems(items={[item.name for item in self]})"
 
+    def pop(self, item_name: str):
+        item = getattr(self, item_name)
+        self.remove(item_name)
+        return item
+
+    def remove(self, item_name: str):
+        self._names.remove(item_name)
+        delattr(self, item_name)
+
     def retrieve_all(self, soup: BeautifulSoup) -> House:
         house = {}
         for item in self:
