@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 
 House = Dict[str, str]
 
+
 class ItemContent(TypedDict):
     type: str
     text_in_website: Optional[str]
