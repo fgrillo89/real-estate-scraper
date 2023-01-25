@@ -11,7 +11,7 @@ from bs4.element import SoupStrainer
 from tqdm import tqdm
 
 from real_estate_scraper.configuration import ScraperConfig, House
-from real_estate_scraper.html_handling import get_response, process_response
+from real_estate_scraper.html_handling import get_response
 from real_estate_scraper.logging_mgmt import create_logger
 from real_estate_scraper.parsing import get_retrieval_statistics
 from real_estate_scraper.save import write_to_sqlite, to_csv, create_folder, \
@@ -199,7 +199,7 @@ class Scraper:
     async def _get_pages_batches(self,
                                  city: Optional[str] = None,
                                  pages: Union[None, int, list[int]] = None,
-                                 batch_size: Optional[int] = None) -> list[int]:
+                                 batch_size: Optional[int] = None) -> list:
         if isinstance(pages, int):
             pages = [pages]
 
@@ -212,6 +212,33 @@ class Scraper:
 
         return pages
 
+    async def _get_shallow_urls(self,
+                                city: Optional[str] = None,
+                                pages: Union[None, int, list[int]] = None):
+        pages = await self._get_pages_batches(city=city, pages=pages)
+        return [self._get_city_url(city=city, page=page) for page in pages]
+
+    def _get_deep_url_from_df_shallow(self, df_shallow: pd.DataFrame) -> list[str]:
+        return df_shallow.href.transform(self._url_from_href).values
+
+    def _url_from_href(self, href):
+        return self.config.website_settings.main_url + href
+
+    async def _scrape_url_shallow(self, url) -> list[House]:
+        soup = await self._get_soup(url)
+        listings = self.config.search_results_items["listings"].retrieve(soup)
+        houses = [self.config.house_items_shallow.retrieve_all(listing) for listing in
+                  listings]
+        for house in houses:
+            house["url_shallow"] = url
+        return houses
+
+    async def _scrape_url_deep(self, url) -> House:
+        soup = await self._get_soup(url)
+        house = self.config.house_items_deep.retrieve_all(soup)
+        house["url_deep"] = url
+        return house
+
     async def _scrape_city_async(
             self,
             city: Optional[str] = None,
@@ -219,27 +246,23 @@ class Scraper:
             deep=False
     ) -> pd.DataFrame:
 
-        pages = await self._get_pages_batches(city, pages)
+        urls_shallow = await self._get_shallow_urls(city, pages)
 
-        houses = await asyncio.gather(
-            *(self._get_houses_from_page_shallow(city, i) for i in pages)
-        )
+        houses = await asyncio.gather(*(self._scrape_url_shallow(url) for url in
+                                        urls_shallow)
+                                      )
 
-        house_data = list(chain(*houses))
+        shallow_houses_list = list(chain(*houses))
 
-        df_shallow = pd.DataFrame(house_data)
-        df_shallow["url_deep"] = df_shallow.href.transform(
-            lambda x: self.config.website_settings.main_url + x
-        ).values
+        df_shallow = pd.DataFrame(shallow_houses_list)
+        urls_deep = self._get_deep_url_from_df_shallow(df_shallow)
+        df_shallow["url_deep"] = urls_deep
         df_shallow["TimeStampShallow"] = get_timestamp()
 
         if not deep:
             return df_shallow
 
-        urls = df_shallow.url_deep.values
-        houses = await asyncio.gather(
-            *(self._get_house_from_url_deep(url) for url in urls)
-        )
+        houses = await asyncio.gather(*(self._scrape_url_deep(url) for url in urls_deep))
         df_deep = pd.DataFrame(houses)
         df_deep["TimeStampDeep"] = get_timestamp()
         return df_shallow.merge(df_deep, on="url_deep")
@@ -273,24 +296,6 @@ class Scraper:
         )
         return num_pages, num_listings
 
-    async def _get_houses_from_page_shallow(self, city: str = None, page: int = 1) -> list[House]:
-        url, soup = await self._get_city_soup(city=city, page=page)
-        listings = self.config.search_results_items["listings"].retrieve(soup)
-        houses = [self.config.house_items_shallow.retrieve_all(listing) for listing in listings]
-        for house in houses:
-            house["url_shallow"] = url
-            house["page_shallow"] = page
-        return houses
-
-    async def _get_house_from_url_deep(self, url: str) -> House:
-        soup = await self._get_soup(url)
-        house = self.config.house_items_deep.retrieve_all(soup)
-        house["url_deep"] = url
-        return house
-
-    def _from_href_to_url(self, href: str) -> str:
-        return self.config.website_settings.main_url + href
-
     @property
     def num_house_items_shallow(self) -> int:
         return len(self.config.house_items_shallow)
@@ -309,4 +314,3 @@ class Scraper:
     def house_items_deep_names(self) -> list[str]:
         if self.config.house_items_deep:
             return list(self.config.house_items_deep.names)
-
