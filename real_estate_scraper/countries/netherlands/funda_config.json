@@ -191,6 +191,10 @@
       "text_in_website": "Shed / storage",
       "type": "text"
     },
+    "BalconyRoofGarden": {
+      "text_in_website": "Balcony/roof garden",
+      "type": "text"
+    },
     "ParkingFacilities": {
       "text_in_website": "Type of parking facilities",
       "type": "text"
@@ -205,6 +209,10 @@
     },
     "Description": {
       "text_in_website": "Description",
+      "type": "text"
+    },
+    "VveContribution": {
+      "text_in_website": "Periodic contribution",
       "type": "text"
     }
   }
