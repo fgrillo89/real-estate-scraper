@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import Union, Optional
 
@@ -19,15 +20,23 @@ async def get_response(url_str: str,
                                        timeout=timeout) as response:
                     response.raise_for_status()
                     return await process_response(response, read_format=read_format)
-        except aiohttp.ClientError as e:
+        except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             retries += 1
             if retries == max_retries:
                 raise e
-            msg = f'Retrying request to {url_str} (attempt {retries}/{max_retries})'
+            msg = f"Retrying request to {url_str} (attempt {retries}/{max_retries})"\
+                  f"because of {e}"
             if logger:
                 logging.warning(msg)
             else:
                 print(msg)
+        except Exception as e:
+            msg = f"Could not request {url_str} because of {e}"
+            if logger:
+                logging.warning(msg)
+            else:
+                print(msg)
+            raise e
 
 
 async def process_response(response: aiohttp.ClientResponse, read_format: str = "text") \
