@@ -5,7 +5,6 @@ from time import perf_counter
 from typing import Callable
 from zoneinfo import ZoneInfo
 
-
 now = datetime.now
 
 
@@ -38,16 +37,17 @@ def func_timer(active=True):
 def compose_functions(*func: Callable) -> Callable:
     def compose(f, g):
         return lambda x: f(g(x))
+
     return reduce(compose, func, lambda x: x)
 
 
-def split_list(input_list: list, chunksize: int) -> list:
+def split_list(input_list: list, chunksize: int) -> list[list[int]]:
     size = len(input_list)
     n_chunks = ceil(size / chunksize)
 
     chunks = []
     for i in range(0, n_chunks):
-        chunks.append(input_list[i * chunksize : i * chunksize + chunksize])
+        chunks.append(input_list[i * chunksize: i * chunksize + chunksize])
     return chunks
 
 
