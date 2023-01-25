@@ -276,7 +276,8 @@ class Scraper:
         async with self.semaphore:
             async with self.limiter:
                 response = await get_response(url,
-                                              header=self.config.website_settings.header)
+                                              header=self.config.website_settings.header,
+                                              logger=self.logger)
         self.logger.info(f"Done requesting {url}")
         return BeautifulSoup(response, "lxml", parse_only=self.parse_only)
 

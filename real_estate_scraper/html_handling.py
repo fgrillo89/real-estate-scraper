@@ -1,4 +1,5 @@
-from typing import Union
+import logging
+from typing import Union, Optional
 
 import aiohttp
 
@@ -7,7 +8,8 @@ async def get_response(url_str: str,
                        header: dict,
                        read_format: str = "text",
                        max_retries: int = 3,
-                       timeout: int = 10) -> Union[str, dict, list]:
+                       timeout: int = 10,
+                       logger: Optional[logging.Logger] = None) -> Union[str, dict, list]:
     retries = 0
     while retries < max_retries:
         try:
@@ -21,7 +23,11 @@ async def get_response(url_str: str,
             retries += 1
             if retries == max_retries:
                 raise e
-            print(f'Retrying request to {url_str} (attempt {retries}/{max_retries})')
+            msg = f'Retrying request to {url_str} (attempt {retries}/{max_retries})'
+            if logger:
+                logging.warning(msg)
+            else:
+                print(msg)
 
 
 async def process_response(response: aiohttp.ClientResponse, read_format: str = "text") \
