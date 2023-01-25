@@ -11,7 +11,7 @@ from bs4.element import SoupStrainer
 from tqdm import tqdm
 
 from real_estate_scraper.configuration import ScraperConfig, House
-from real_estate_scraper.html_handling import get_response
+from real_estate_scraper.html_handling import get_response, process_response
 from real_estate_scraper.logging_mgmt import create_logger
 from real_estate_scraper.parsing import get_retrieval_statistics
 from real_estate_scraper.save import write_to_sqlite, to_csv, create_folder, \
@@ -47,8 +47,8 @@ class Scraper:
     def __init__(
             self,
             config: ScraperConfig,
-            max_active_requests: int = 5,
-            requests_per_sec: int = 5,
+            max_active_requests: int = 4,
+            requests_per_sec: int = 4,
             logger: Optional[logging.Logger] = None,
     ):
 
@@ -252,9 +252,10 @@ class Scraper:
     async def _get_soup(self, url: str) -> BeautifulSoup:
         async with self.semaphore:
             async with self.limiter:
-                response = await get_response(url, header=self.config.website_settings.header)
+                response = await get_response(url,
+                                              header=self.config.website_settings.header)
         self.logger.info(f"Done requesting {url}")
-        return BeautifulSoup(response.text, "lxml", parse_only=self.parse_only)
+        return BeautifulSoup(response, "lxml", parse_only=self.parse_only)
 
     def _get_city_url(self, city: Optional[str] = None, page: int = 1) -> str:
         if city is None:
