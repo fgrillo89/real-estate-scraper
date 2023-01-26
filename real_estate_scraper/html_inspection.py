@@ -31,19 +31,23 @@ def get_soups(urls: Union[str, list[str]],
     return asyncio.run(fetch_all())
 
 
+def get_dd_text_from_dt_name(soup, text_in_website):
+    dt = soup.find(
+        lambda tag: tag.name == "dt" and text_in_website.lower() in tag.text.lower()
+    )
+    if dt:
+        return ','.join(list(dt.find_next("dd").stripped_strings))
+    else:
+        return None
+
+
 def main():
-    urls = ["https://www.funda.nl/en/koop/hoogvliet-rotterdam/huis-42054036-schakelweg"
-            "-108/",
-            "https://www.funda.nl/en/koop/rotterdam/huis-42942117-cantecleerpad-8/",
-            "https://www.funda.nl/en/koop/rotterdam/huis-42942750-noorder-kerkedijk-33/",
-            "https://www.funda.nl/en/koop/rotterdam/huis-42945676-menorcalaan-18/",
-            "https://www.funda.nl/en/koop/rotterdam/huis-42934983-koningsvaren-59/",
-            "https://www.funda.nl/en/koop/rotterdam/huis-88358067-rotterdamse-rijweg-14/",
-            "https://www.funda.nl/en/koop/rotterdam/huis-42999847-hazewinkelpad-4/",
-            "https://www.funda.nl/en/koop/hoogvliet-rotterdam/huis-88335400-reinier"
-            "-kloegstraat-101/",
-            "https://www.funda.nl/en/koop/hoogvliet-rotterdam/huis-42976894-bongweg-77/",
-            "https://www.funda.nl/en/koop/hoogvliet-rotterdam/huis-42954925-kaneelhof-34/"]
+    url_template = "https://www.immobiliare.it/vendita-case/{}/?criterio=rilevanza&pag={}"
+
+    get_url = lambda city, page: url_template.format(city, page)
+
+    pages = [1, 2, 3]
+    urls = [get_url("roma", page) for page in pages]
     headers = {
         "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ("
                       "KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36",
