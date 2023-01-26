@@ -11,7 +11,8 @@ from bs4.element import SoupStrainer
 from tqdm import tqdm
 
 from real_estate_scraper.configuration import ScraperConfig, House
-from real_estate_scraper.html_handling import get_response
+from real_estate_scraper.html_handling import get_response, get_soup, add_semaphore, \
+    add_limiter
 from real_estate_scraper.logging_mgmt import create_logger
 from real_estate_scraper.parsing import get_retrieval_statistics
 from real_estate_scraper.save import write_to_sqlite, to_csv, create_folder, \
@@ -273,13 +274,19 @@ class Scraper:
         return url, soup
 
     async def _get_soup(self, url: str) -> BeautifulSoup:
-        async with self.semaphore:
-            async with self.limiter:
-                response = await get_response(url,
-                                              header=self.config.website_settings.header,
-                                              logger=self.logger)
+
+        @add_limiter(self.limiter)
+        @add_semaphore(self.semaphore)
+        async def limited_soup(*args, **kwargs):
+            return await get_soup(*args, **kwargs)
+
+        soup = await limited_soup(url,
+                                  header=self.config.website_settings.header,
+                                  logger=self.logger,
+                                  parse_only=self.parse_only)
+
         self.logger.info(f"Done requesting {url}")
-        return BeautifulSoup(response, "lxml", parse_only=self.parse_only)
+        return soup
 
     def _get_city_url(self, city: Optional[str] = None, page: int = 1) -> str:
         if city is None:
@@ -315,3 +322,5 @@ class Scraper:
     def house_items_deep_names(self) -> list[str]:
         if self.config.house_items_deep:
             return list(self.config.house_items_deep.names)
+
+
