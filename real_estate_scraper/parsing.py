@@ -17,9 +17,9 @@ def str_from_tag(tag: Tag, strip=True, **kwargs) -> Union[None, str]:
         print(e)
 
 
-def extract_numeric_value(
-        string: str, decimal_delimiter: str = ".", thousands_delimiter: str = ","
-) -> Optional[float]:
+def extract_numeric_value(string: str,
+                          decimal_delimiter: str = ".",
+                          thousands_delimiter: str = ",") -> Optional[float]:
     """Extracts the numeric value from a string, takes into account the unit of
     measure, the thousands' delimiter, the decimal delimiter, and ignores any character
     or space before a digit"""
@@ -83,9 +83,8 @@ def extract_dutch_postcode_and_city(string: str) \
     return None
 
 
-def get_retrieval_statistics(
-        df: pd.DataFrame, items_list: list[str]
-) -> tuple[float, int, int]:
+def get_retrieval_statistics(df: pd.DataFrame,
+                             items_list: list[str]) -> tuple[float, int, int]:
     """Get the retrieval statistics for a list of items"""
 
     nan_count = df[items_list].isnull().sum(axis=1)
@@ -94,3 +93,6 @@ def get_retrieval_statistics(
     max_items = num_items - nan_count.min()
     min_items = num_items - nan_count.max()
     return success_rate, max_items, min_items
+
+
+
