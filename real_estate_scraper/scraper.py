@@ -219,12 +219,6 @@ class Scraper:
         pages = await self._get_pages_batches(city=city, pages=pages)
         return [self._get_city_url(city=city, page=page) for page in pages]
 
-    def _get_deep_url_from_df_shallow(self, df_shallow: pd.DataFrame) -> list[str]:
-        return df_shallow.href.transform(self._url_from_href).values
-
-    def _url_from_href(self, href):
-        return self.config.website_settings.main_url + href
-
     async def _scrape_url_shallow(self, url) -> list[House]:
         soup = await self._get_soup(url)
         listings = self.config.search_results_items["listings"].retrieve(soup)
@@ -237,7 +231,7 @@ class Scraper:
     async def _scrape_url_deep(self, url) -> House:
         soup = await self._get_soup(url)
         house = self.config.house_items_deep.retrieve_all(soup)
-        house["url_deep"] = url
+        house["href"] = url
         return house
 
     async def _scrape_city_async(
@@ -256,17 +250,16 @@ class Scraper:
         shallow_houses_list = list(chain(*houses))
 
         df_shallow = pd.DataFrame(shallow_houses_list)
-        urls_deep = self._get_deep_url_from_df_shallow(df_shallow)
-        df_shallow["url_deep"] = urls_deep
         df_shallow["TimeStampShallow"] = get_timestamp()
 
         if not deep:
             return df_shallow
 
+        urls_deep = df_shallow.href.values
         houses = await asyncio.gather(*(self._scrape_url_deep(url) for url in urls_deep))
         df_deep = pd.DataFrame(houses)
         df_deep["TimeStampDeep"] = get_timestamp()
-        return df_shallow.merge(df_deep, on="url_deep")
+        return df_shallow.merge(df_deep, on="href")
 
     async def _get_city_soup(self, city: str, page: int) -> tuple[str, BeautifulSoup]:
         url = self._get_city_url(city, page)
@@ -322,5 +315,3 @@ class Scraper:
     def house_items_deep_names(self) -> list[str]:
         if self.config.house_items_deep:
             return list(self.config.house_items_deep.names)
-
-

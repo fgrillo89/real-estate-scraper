@@ -22,6 +22,11 @@ def extract_number_of_rooms(soup: BeautifulSoup) -> BeautifulSoup:
         return result[1]
 
 
+def get_href(soup: BeautifulSoup) -> str:
+    href = soup.find("a", attrs={"data-object-url-tracking": "resultlist"}).get("href")
+    return funda_config.website_settings.main_url + str_from_tag(href)
+
+
 house_attrs_sh_func_map = {
     "Address": lambda soup: soup.find("h2"),
     "PostCode": lambda soup: soup.find("h4"),
@@ -29,9 +34,7 @@ house_attrs_sh_func_map = {
     "PlotSize": lambda soup: soup.find(attrs={"title": "Plot size"}),
     "Price": lambda soup: soup.find("span", class_="search-result-price"),
     "Rooms": extract_number_of_rooms,
-    "href": lambda soup: soup.find(
-        "a", attrs={"data-object-url-tracking": "resultlist"}
-    ).get("href"),
+    "href": get_href,
     "HouseId": lambda soup: soup.find(
         "a", attrs={"data-object-url-tracking": "resultlist"}
     ).get("data-search-result-item-anchor"),
@@ -59,8 +62,10 @@ for item in funda_config.house_items_deep:
 get_neighbourhood = lambda soup: soup.find("span", class_="object-header__subtitle")
 get_description = lambda soup: soup.find("div", class_="object-description-body")
 
-funda_config.house_items_deep.Neighbourhood.retrieve = compose_functions(str_from_tag, get_neighbourhood)
-funda_config.house_items_deep.Description.retrieve = compose_functions(str_from_tag, get_description)
+funda_config.house_items_deep.Neighbourhood.retrieve = compose_functions(str_from_tag,
+                                                                         get_neighbourhood)
+funda_config.house_items_deep.Description.retrieve = compose_functions(str_from_tag,
+                                                                       get_description)
 
 
 def get_max_num_pages(soup: BeautifulSoup) -> int:
