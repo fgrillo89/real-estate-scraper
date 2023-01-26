@@ -1,0 +1,60 @@
+{
+  "website_settings": {
+    "name": "immobiliare",
+    "header": {
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36"
+    },
+    "main_url": "https://www.immobiliare.it",
+    "city_search_url_template": "https://www.immobiliare.it/vendita-case/{city}/?criterio=rilevanza&pag={page}",
+    "default_city": "",
+    "parse_only": [
+      "h2",
+      "h4",
+      "div",
+      "span",
+      "ul",
+      "li",
+      "a",
+      "dd",
+      "dt",
+      "script"
+    ]
+  },
+  "search_results_items": {
+    "number_of_pages": {
+      "type": "numeric"
+    },
+    "number_of_listings": {
+      "type": "numeric"
+    },
+    "listings": {
+      "type": "text"
+    }
+  },
+  "house_items_shallow": {
+    "Address": {
+      "type": "text"
+    },
+    "LivingArea": {
+      "type": "numeric"
+    },
+    "Price": {
+      "type": "numeric"
+    },
+    "Rooms": {
+      "type": "numeric"
+    },
+    "Bathrooms": {
+      "type": "numeric"
+    },
+    "Floor": {
+      "type": "numeric"
+    },
+    "NumberOfApartments": {
+      "type": "numeric"
+    },
+    "href": {
+      "type": "text"
+    }
+  }
+}
