@@ -52,4 +52,4 @@ def split_list(input_list: list, chunksize: int) -> list[list[int]]:
 
 
 if __name__ == "__main__":
-    f = get_timestamp
+    fmp = get_timestamp
