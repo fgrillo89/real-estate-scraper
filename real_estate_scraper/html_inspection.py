@@ -6,8 +6,10 @@ from aiolimiter import AsyncLimiter
 from bs4 import BeautifulSoup
 from pipe import traverse
 
+from real_estate_scraper.configuration import ItemContent
 from real_estate_scraper.html_handling import get_soup, add_limiter, add_semaphore
 from real_estate_scraper.parsing import str_from_tag
+from real_estate_scraper.utils import camelcase
 
 MAX_ACTIVE_REQUESTS = 5
 REQUESTS_PER_SECOND = 5
@@ -57,6 +59,13 @@ def extract_all_dd_text(soup: BeautifulSoup, dt_names: list[str]):
     return items
 
 
+def item_content_from_dt_names(items_text: list[str]) -> list[dict[ItemContent]]:
+    items = []
+    for text in items_text:
+        items.append({camelcase(text): {"text_in_website": text, "type": "text"}})
+    return items
+
+
 def main():
     urls = ['https://www.immobiliare.it/annunci/98531352/',
             'https://www.immobiliare.it/annunci/95014054/',
@@ -92,4 +101,4 @@ def main():
 
 
 if __name__ == "__main__":
-    results, unique_items = main()
+    results, items = main()
