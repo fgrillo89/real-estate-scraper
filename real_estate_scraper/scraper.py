@@ -11,7 +11,7 @@ from bs4.element import SoupStrainer
 from tqdm import tqdm
 
 from real_estate_scraper.configuration import ScraperConfig, House
-from real_estate_scraper.html_handling import get_response, get_soup, add_semaphore, \
+from real_estate_scraper.html_handling import get_soup, add_semaphore, \
     add_limiter
 from real_estate_scraper.logging_mgmt import create_logger
 from real_estate_scraper.parsing import get_retrieval_statistics
