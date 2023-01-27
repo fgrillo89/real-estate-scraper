@@ -51,5 +51,10 @@ def split_list(input_list: list, chunksize: int) -> list[list[int]]:
     return chunks
 
 
+def camelcase(string: str, separator: str = " ") -> str:
+    cap_strings = [s.capitalize() for s in string.split(separator)]
+    return "".join(cap_strings)
+
+
 if __name__ == "__main__":
     fmp = get_timestamp
