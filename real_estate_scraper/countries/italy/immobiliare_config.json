@@ -56,5 +56,91 @@
     "href": {
       "type": "text"
     }
+  },
+  "house_items_deep": {
+    "Stato": {
+      "text_in_website": "stato",
+      "type": "text"
+    },
+    "EfficienzaEnergetica": {
+      "text_in_website": "Efficienza energetica",
+      "type": "text"
+    },
+    "Piano": {
+      "text_in_website": "piano",
+      "type": "text"
+    },
+    "IndicePrest.EnergeticaRinnovabile": {
+      "text_in_website": "Indice prest. energetica rinnovabile",
+      "type": "text"
+    },
+    "CertificazioneEnergetica": {
+      "text_in_website": "certificazione energetica",
+      "type": "text"
+    },
+    "Climatizzatore": {
+      "text_in_website": "Climatizzatore",
+      "type": "text"
+    },
+    "Contratto": {
+      "text_in_website": "contratto",
+      "type": "text"
+    },
+    "Superficie": {
+      "text_in_website": "superficie",
+      "type": "text"
+    },
+    "Prezzo": {
+      "text_in_website": "prezzo",
+      "type": "text"
+    },
+    "AnnoDiCostruzione": {
+      "text_in_website": "anno di costruzione",
+      "type": "text"
+    },
+    "TotalePianiEdificio": {
+      "text_in_website": "totale piani edificio",
+      "type": "text"
+    },
+    "Disponibilit\\u00e0": {
+      "text_in_website": "disponibilit\\u00e0",
+      "type": "text"
+    },
+    "RiferimentoEDataAnnuncio": {
+      "text_in_website": "riferimento e Data annuncio",
+      "type": "text"
+    },
+    "Locali": {
+      "text_in_website": "locali",
+      "type": "text"
+    },
+    "SpeseCondominio": {
+      "text_in_website": "spese condominio",
+      "type": "text"
+    },
+    "PrestazioneEnergeticaDelFabbricato": {
+      "text_in_website": "Prestazione energetica del fabbricato",
+      "type": "text"
+    },
+    "Tipologia": {
+      "text_in_website": "tipologia",
+      "type": "text"
+    },
+    "Riscaldamento": {
+      "text_in_website": "riscaldamento",
+      "type": "text"
+    },
+    "PostiAuto": {
+      "text_in_website": "Posti Auto",
+      "type": "text"
+    },
+    "AltreCaratteristiche": {
+      "text_in_website": "altre caratteristiche",
+      "type": "text"
+    },
+    "DataDiInizioLavoriEDiConsegnaPrevista": {
+      "text_in_website": "Data di inizio lavori e di consegna prevista",
+      "type": "text"
+    }
   }
 }
