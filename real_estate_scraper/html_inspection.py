@@ -60,9 +60,9 @@ def extract_all_dd_text(soup: BeautifulSoup, dt_names: list[str]):
 
 
 def item_content_from_dt_names(items_text: list[str]) -> list[dict[ItemContent]]:
-    items = []
+    items = {}
     for text in items_text:
-        items.append({camelcase(text): {"text_in_website": text, "type": "text"}})
+        items[camelcase(text)] = {"text_in_website": text, "type": "text"}
     return items
 
 
