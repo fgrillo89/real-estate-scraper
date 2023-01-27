@@ -7,6 +7,12 @@ from real_estate_scraper.countries.italy.immobiliare import \
 module_path = Path(__file__)
 module_name = module_path.stem
 logger = create_logger(module_name)
-scraper = get_immobiliare_scraper(logger=logger)
+scraper = get_immobiliare_scraper(logger=logger,
+                                  max_active_requests=5,
+                                  requests_per_sec=5)
 
-df = scraper.download_to_dataframe(city='roma', pages=1)
+cities = ["milano", "roma", "messina", "palermo", "anzio", "torino", "venezia",
+          "firenze", "alghero", "bari", "aosta", "trento", "ancona"]
+
+for city in cities:
+    scraper.download_to_db(city=city, deep=True)
