@@ -102,8 +102,8 @@
       "text_in_website": "totale piani edificio",
       "type": "text"
     },
-    "Disponibilit\\u00e0": {
-      "text_in_website": "disponibilit\\u00e0",
+    "Availability": {
+      "text_in_website": "disponibilit",
       "type": "text"
     },
     "RiferimentoEDataAnnuncio": {
@@ -140,6 +140,9 @@
     },
     "DataDiInizioLavoriEDiConsegnaPrevista": {
       "text_in_website": "Data di inizio lavori e di consegna prevista",
+      "type": "text"
+    },
+    "Coordinates": {
       "type": "text"
     }
   }

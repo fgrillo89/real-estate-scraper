@@ -6,6 +6,8 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 from pipe import traverse, select, sort
 
+from real_estate_scraper.html_inspection import extract_all_dd_text, \
+    get_dd_text_from_dt_name
 from real_estate_scraper.parsing import str_from_tag, extract_numeric_value
 from real_estate_scraper.utils import compose_functions
 
@@ -64,6 +66,19 @@ house_attrs_sh_func_map = {
 
 for item in immobiliare_config.house_items_shallow:
     item.retrieve = compose_functions(str_from_tag, house_attrs_sh_func_map[item.name])
+
+for item in immobiliare_config.house_items_deep:
+    if item.name != "Coordinates":
+        func = partial(get_dd_text_from_dt_name, text_in_website=item.text_in_website)
+        item.retrieve = compose_functions(str_from_tag, func)
+
+
+def extract_coordinates(soup: BeautifulSoup) -> str:
+    map_string = soup.find("nd-map").contents[1].replace("mapConfig", "")
+    return str(json.loads(map_string)['center'])
+
+
+immobiliare_config.house_items_deep.Coordinates.retrieve = extract_coordinates
 
 
 def get_immobiliare_scraper(logger, **kwargs):
