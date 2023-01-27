@@ -5,7 +5,8 @@
       "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36"
     },
     "main_url": "https://www.immobiliare.it",
-    "city_search_url_template": "https://www.immobiliare.it/vendita-case/{city}/?criterio=rilevanza&pag={page}",
+    "city_search_url_template": "https://www.immobiliare.it/vendita-case/{city}/?criterio=rilevanza&pag={page}&noAste=1",
+
     "default_city": "",
     "parse_only": [
       "h2",
@@ -142,8 +143,32 @@
       "text_in_website": "Data di inizio lavori e di consegna prevista",
       "type": "text"
     },
-    "Coordinates": {
+    "Latitude": {
+      "type": "numeric"
+    },
+    "Longitude": {
+      "type": "numeric"
+    },
+    "AddressDeep": {
       "type": "text"
+    },
+    "Region": {
+      "type": "text"
+    },
+    "Province": {
+      "type": "text"
+    },
+    "City": {
+      "type": "text"
+    },
+    "Macrozone": {
+      "type": "text"
+    },
+    "Microzone": {
+      "type": "text"
+    },
+    "StreetNumber": {
+      "type": "numeric"
     }
   }
 }

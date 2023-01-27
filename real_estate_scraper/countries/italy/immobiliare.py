@@ -6,13 +6,11 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 from pipe import traverse, select, sort
 
-from real_estate_scraper.html_inspection import extract_all_dd_text, \
-    get_dd_text_from_dt_name
-from real_estate_scraper.parsing import str_from_tag, extract_numeric_value
-from real_estate_scraper.utils import compose_functions
-
 from real_estate_scraper.configuration import ScraperConfig
+from real_estate_scraper.html_inspection import get_dd_text_from_dt_name
+from real_estate_scraper.parsing import str_from_tag, extract_numeric_value
 from real_estate_scraper.scraper import Scraper
+from real_estate_scraper.utils import compose_functions
 
 config_path = Path(__file__).parent / "immobiliare_config.json"
 immobiliare_config = ScraperConfig.from_json(config_path)
@@ -67,18 +65,40 @@ house_attrs_sh_func_map = {
 for item in immobiliare_config.house_items_shallow:
     item.retrieve = compose_functions(str_from_tag, house_attrs_sh_func_map[item.name])
 
+special_items = ["Latitude",
+                 "Longitude",
+                 "City",
+                 "Province",
+                 "Region",
+                 "AddressDeep",
+                 "Microzone",
+                 "Macrozone",
+                 "StreetNumber"]
+
 for item in immobiliare_config.house_items_deep:
-    if item.name != "Coordinates":
+    if item.name not in special_items:
         func = partial(get_dd_text_from_dt_name, text_in_website=item.text_in_website)
         item.retrieve = compose_functions(str_from_tag, func)
 
 
-def extract_coordinates(soup: BeautifulSoup) -> str:
-    map_string = soup.find("nd-map").contents[1].replace("mapConfig", "")
-    return str(json.loads(map_string)['center'])
+def fetch_location(soup: BeautifulSoup) -> dict:
+    text = soup.find("script", attrs={"type": "application/json",
+                                      "id": "js-hydration"}).text
+    return json.loads(text)['listing']['properties'][0]['location']
 
 
-immobiliare_config.house_items_deep.Coordinates.retrieve = extract_coordinates
+location_items_map = {"Latitude": lambda soup: fetch_location(soup)['latitude'],
+                      "Longitude": lambda soup: fetch_location(soup)['longitude'],
+                      "City": lambda soup: fetch_location(soup)['city']['name'],
+                      "Province": lambda soup: fetch_location(soup)['province']['name'],
+                      "Region": lambda soup: fetch_location(soup)['region']['name'],
+                      "Microzone": lambda soup: fetch_location(soup)['microzone']['name'],
+                      "Macrozone": lambda soup: fetch_location(soup)['macrozone']['name'],
+                      "StreetNumber": lambda soup: fetch_location(soup)['streetNumber'],
+                      "AddressDeep": lambda soup: fetch_location(soup)['address']}
+
+for item in special_items:
+    immobiliare_config.house_items_deep[item].retrieve = location_items_map[item]
 
 
 def get_immobiliare_scraper(logger, **kwargs):
