@@ -104,7 +104,9 @@ class Scraper:
         dataframes = []
         for df in self._dataframe_generator(city, pages, deep, shallow_batch_size):
             dataframes.append(df)
-        return pd.concat(dataframes)
+
+        if dataframes:
+            return pd.concat(dataframes)
 
     @func_timer(active=TIMER_ACTIVE)
     def download_to_file(
@@ -188,14 +190,16 @@ class Scraper:
             self.semaphore = Semaphore(value=self.max_active_requests)
             df = asyncio.run(self._scrape_city_async(city=city, pages=chunk, deep=deep))
 
-            success_rate, max_items, min_items = get_retrieval_statistics(df,
+            if df is None:
+                success_rate, max_items, min_items = get_retrieval_statistics(df,
                                                                           item_list)
+                self.logger.info(f"Batch mean items-retrieval success rate:"
+                                 f" {success_rate}%\n"
+                                 f"Max items retrieved: {max_items}/{len(item_list)}\n"
+                                 f"Min items retrieved: {min_items}/{len(item_list)}")
+                yield df
 
-            self.logger.info(f"Batch mean items-retrieval success rate:"
-                             f" {success_rate}%\n"
-                             f"Max items retrieved: {max_items}/{len(item_list)}\n"
-                             f"Min items retrieved: {min_items}/{len(item_list)}")
-            yield df
+            self.logger.warning("No items retrieved")
 
     async def _get_pages_batches(self,
                                  city: Optional[str] = None,
@@ -239,13 +243,16 @@ class Scraper:
             city: Optional[str] = None,
             pages: Union[None, int, list[int]] = None,
             deep=False
-    ) -> pd.DataFrame:
+    ) -> Optional[pd.DataFrame]:
 
         urls_shallow = await self._get_shallow_urls(city, pages)
 
         houses = await asyncio.gather(*(self._scrape_url_shallow(url) for url in
                                         urls_shallow)
                                       )
+
+        if not houses:
+            return None
 
         shallow_houses_list = list(chain(*houses))
 
