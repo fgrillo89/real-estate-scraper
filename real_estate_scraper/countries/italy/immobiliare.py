@@ -2,6 +2,7 @@ import json
 import re
 from functools import partial
 from pathlib import Path
+from typing import Callable, Optional
 
 from bs4 import BeautifulSoup
 from pipe import traverse, select, sort
@@ -89,20 +90,36 @@ def fetch_location(soup: BeautifulSoup) -> dict:
     return json.loads(text)['listing']['properties'][0]['location']
 
 
-location_items_map = {"Latitude": lambda soup: fetch_location(soup)['latitude'],
-                      "Longitude": lambda soup: fetch_location(soup)['longitude'],
-                      "City": lambda soup: fetch_location(soup)['city']['name'],
-                      "Province": lambda soup: fetch_location(soup)['province']['name'],
-                      "Region": lambda soup: fetch_location(soup)['region']['name'],
-                      "Microzone": lambda soup: fetch_location(soup)['microzone']['name'],
-                      "Macrozone": lambda soup: fetch_location(soup)['macrozone']['name'],
-                      "StreetNumber": lambda soup: fetch_location(soup)['streetNumber'],
-                      "AddressDeep": lambda soup: fetch_location(soup)['address']}
+def fetch_special_item(soup: BeautifulSoup, key1: str, key2: Optional[str] = None):
+    location_dict = fetch_location(soup)
+    if location_dict:
+        first = location_dict.get(key1)
+        if key2:
+            if first:
+                return first.get(key2)
+            else:
+                return None
+        return first
+    return None
+
+
+def fetch_item_factory(key1: str, key2: Optional[str] = None) -> Callable:
+    fun = partial(fetch_special_item, key1=key1, key2=key2)
+    return fun
+
+
+location_items_map = {"Latitude": fetch_item_factory('latitude'),
+                      "Longitude": fetch_item_factory('longitude'),
+                      "City": fetch_item_factory('city', 'name'),
+                      "Province": fetch_item_factory('province', 'name'),
+                      "Region": fetch_item_factory('region', 'name'),
+                      "Microzone": fetch_item_factory('microzone', 'name'),
+                      "Macrozone": fetch_item_factory('macrozone', 'name'),
+                      "StreetNumber": fetch_item_factory('streetNumber'),
+                      "AddressDeep": fetch_item_factory('address')}
 
 for item in special_items:
-    immobiliare_config.house_items_deep[item].retrieve = lambda soup: \
-        location_items_map[item](soup) if location_items_map[item](soup) else None
-
+    immobiliare_config.house_items_deep[item].retrieve = location_items_map[item]
 
 
 def get_immobiliare_scraper(logger, **kwargs):
