@@ -17,15 +17,17 @@ immobiliare_config = ScraperConfig.from_json(config_path)
 
 
 def get_max_num_pages(soup: BeautifulSoup) -> int:
-    pp_soup = soup.find("div", attrs={"data-cy": "pagination-list"}).contents
-    num_pages = list(
-        pp_soup
-        | select(lambda x: re.findall("\d+", x.text.replace(",", "")))
-        | traverse
-        | select(lambda x: int(x))
-        | sort(reverse=True)
-    )[0]
-    return num_pages
+    pagination_list = soup.find("div", attrs={"data-cy": "pagination-list"})
+    if pagination_list:
+        num_pages = list(
+            pagination_list.contents
+            | select(lambda x: re.findall("\d+", x.text.replace(",", "")))
+            | traverse
+            | select(lambda x: int(x))
+            | sort(reverse=True)
+        )[0]
+        return num_pages
+    return 1
 
 
 def get_num_listings(soup: BeautifulSoup) -> int:
@@ -98,7 +100,9 @@ location_items_map = {"Latitude": lambda soup: fetch_location(soup)['latitude'],
                       "AddressDeep": lambda soup: fetch_location(soup)['address']}
 
 for item in special_items:
-    immobiliare_config.house_items_deep[item].retrieve = location_items_map[item]
+    immobiliare_config.house_items_deep[item].retrieve = lambda soup: \
+        location_items_map[item](soup) if location_items_map[item](soup) else None
+
 
 
 def get_immobiliare_scraper(logger, **kwargs):
