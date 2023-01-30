@@ -33,9 +33,12 @@ def get_max_num_pages(soup: BeautifulSoup) -> int:
 
 def get_num_listings(soup: BeautifulSoup) -> int:
     listings_results = str_from_tag(soup.find("div", class_="in-searchList__title"))
-    return int(extract_numeric_value(listings_results,
-                                     thousands_delimiter=".",
-                                     decimal_delimiter=","))
+    number = extract_numeric_value(listings_results,
+                                   thousands_delimiter=".",
+                                   decimal_delimiter=",")
+    if number:
+        return int(number)
+    return None
 
 
 search_results_func_map = {
