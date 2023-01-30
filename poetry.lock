@@ -913,6 +913,42 @@ files = [
 ]
 
 [[package]]
+name = "geographiclib"
+version = "2.0"
+description = "The geodesic routines from GeographicLib"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "geographiclib-2.0-py3-none-any.whl", hash = "sha256:6b7225248e45ff7edcee32becc4e0a1504c606ac5ee163a5656d482e0cd38734"},
+    {file = "geographiclib-2.0.tar.gz", hash = "sha256:f7f41c85dc3e1c2d3d935ec86660dc3b2c848c83e17f9a9e51ba9d5146a15859"},
+]
+
+[[package]]
+name = "geopy"
+version = "2.3.0"
+description = "Python Geocoding Toolbox"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "geopy-2.3.0-py3-none-any.whl", hash = "sha256:4a29a16d41d8e56ba8e07310802a1cbdf098eeb6069cc3d6d3068fc770629ffc"},
+    {file = "geopy-2.3.0.tar.gz", hash = "sha256:228cd53b6eef699b2289d1172e462a90d5057779a10388a7366291812601187f"},
+]
+
+[package.dependencies]
+geographiclib = ">=1.52,<3"
+
+[package.extras]
+aiohttp = ["aiohttp"]
+dev = ["coverage", "flake8 (>=5.0,<5.1)", "isort (>=5.10.0,<5.11.0)", "pytest (>=3.10)", "pytest-asyncio (>=0.17)", "readme-renderer", "sphinx (<=4.3.2)", "sphinx-issues", "sphinx-rtd-theme (>=0.5.0)"]
+dev-docs = ["readme-renderer", "sphinx (<=4.3.2)", "sphinx-issues", "sphinx-rtd-theme (>=0.5.0)"]
+dev-lint = ["flake8 (>=5.0,<5.1)", "isort (>=5.10.0,<5.11.0)"]
+dev-test = ["coverage", "pytest (>=3.10)", "pytest-asyncio (>=0.17)", "sphinx (<=4.3.2)"]
+requests = ["requests (>=2.16.2)", "urllib3 (>=1.24.2)"]
+timezone = ["pytz"]
+
+[[package]]
 name = "graphviz"
 version = "0.20.1"
 description = "Simple Python interface for Graphviz"
@@ -2187,6 +2223,26 @@ files = [
 ptyprocess = ">=0.5"
 
 [[package]]
+name = "pgeocode"
+version = "0.4.0"
+description = "Approximate geocoding"
+category = "main"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "pgeocode-0.4.0-py3-none-any.whl", hash = "sha256:07995d4cd2d7fec1f82afb14d6025e83bbc156b6f225fa3e0b3417da2ec020c8"},
+    {file = "pgeocode-0.4.0.tar.gz", hash = "sha256:60fc2bad60aa161c3cf46ace4fde607b77e016b1e2a25470534163305499e55e"},
+]
+
+[package.dependencies]
+numpy = "*"
+pandas = "*"
+requests = "*"
+
+[package.extras]
+fuzzy = ["thefuzz"]
+
+[[package]]
 name = "pickleshare"
 version = "0.7.5"
 description = "Tiny 'shelve'-like database with concurrency support"
@@ -3440,4 +3496,4 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "19c48cf646211c50f164a660e381e9a6b91a8de4a3cf8b45df8151c980eb1749"
+content-hash = "9566c6cfecaa854293bc69f8936326bfae1d1874f9ffb4b1baf2a831abc032cd"
