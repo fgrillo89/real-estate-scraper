@@ -68,6 +68,19 @@ funda_config.house_items_deep.Description.retrieve = compose_functions(str_from_
                                                                        get_description)
 
 
+def fetch_location(soup: BeautifulSoup) -> dict:
+    text = str_from_tag(soup.find_all("script", attrs={"type": "application/json"})[-1])
+    latitude, longitude = None, None
+    if text:
+        loc_dict = json.loads(text)
+        latitude, longitude = loc_dict['lat'], loc_dict['lng']
+    return latitude, longitude
+
+
+funda_config.house_items_deep.Latitude.retrieve = lambda soup: fetch_location(soup)[0]
+funda_config.house_items_deep.Longitude.retrieve = lambda soup: fetch_location(soup)[1]
+
+
 def get_max_num_pages(soup: BeautifulSoup) -> int:
     pp_soup = soup.find("div", class_="pagination-pages")
     num_pages = list(
