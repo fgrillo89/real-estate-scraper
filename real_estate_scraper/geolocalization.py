@@ -37,8 +37,8 @@ def get_coordinates(country: str,
 class GoogleGeolocator:
     def __init__(self,
                  api_key: str,
-                 max_active_requests: int = 10,
-                 requests_per_sec: int = 10):
+                 max_active_requests: int = 25,
+                 requests_per_sec: int = 25):
         self.api_key = api_key
         self.max_active_requests = max_active_requests
         self.requests_per_sec = requests_per_sec
@@ -52,11 +52,18 @@ class GoogleGeolocator:
                             adapter_factory=self.adapter_factory) as geolocator:
             try:
                 result = await geolocator.geocode(query)
-                return {"query": query,
-                        "latitude": result.latitude,
-                        "longitude": result.longitude}
-            except GeocoderTimedOut:
+                if result:
+                    return {"query": query,
+                            "latitude": result.latitude,
+                            "longitude": result.longitude}
+                else:
+                    return {"query": query,
+                            "latitude": None,
+                            "longitude": None}
+                    logging.warning(f"query: {query} could not be located")
+            except GeocoderTimedOut as e:
                 # If the geocoder times out, try again
+                logging.warning(f"Timeout error: {e}")
                 return await self.get_coordinates_async(query)
 
     def retrieve_coordinates_from_queries(self, queries: list[str]):
@@ -64,10 +71,12 @@ class GoogleGeolocator:
 
         @add_semaphore(semaphore=self.semaphore)
         @add_limiter(limiter=self.limiter)
+        async def limited_get_coordinates(*args):
+            return await self.get_coordinates_async(*args)
+
         async def fetch_all(queries_list):
-            results = await asyncio.gather(*(self.get_coordinates_async(query)
+            results = await asyncio.gather(*(limited_get_coordinates(query)
                                              for query in queries_list))
             return results
 
         return asyncio.run(fetch_all(queries))
-
