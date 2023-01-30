@@ -191,15 +191,16 @@ class Scraper:
             df = asyncio.run(self._scrape_city_async(city=city, pages=chunk, deep=deep))
 
             if df is None:
-                success_rate, max_items, min_items = get_retrieval_statistics(df,
-                                                                          item_list)
-                self.logger.info(f"Batch mean items-retrieval success rate:"
-                                 f" {success_rate}%\n"
-                                 f"Max items retrieved: {max_items}/{len(item_list)}\n"
-                                 f"Min items retrieved: {min_items}/{len(item_list)}")
-                yield df
+                self.logger.warning("No items retrieved")
+                break
 
-            self.logger.warning("No items retrieved")
+            success_rate, max_items, min_items = get_retrieval_statistics(df,
+                                                                          item_list)
+            self.logger.info(f"Batch mean items-retrieval success rate:"
+                             f" {success_rate}%\n"
+                             f"Max items retrieved: {max_items}/{len(item_list)}\n"
+                             f"Min items retrieved: {min_items}/{len(item_list)}")
+            yield df
 
     async def _get_pages_batches(self,
                                  city: Optional[str] = None,
