@@ -3,6 +3,7 @@ from typing import Union, Optional, Tuple
 
 import pandas as pd
 from bs4.element import Tag
+from unidecode import unidecode
 
 
 def str_from_tag(tag: Tag, strip=True, **kwargs) -> Union[None, str]:
@@ -81,6 +82,11 @@ def extract_dutch_postcode_and_city(string: str) \
         return match.groups()
 
     return None
+
+
+def normalize_city_names(string: str):
+    unicoded = unidecode(string.lower())
+    return unicoded.replace("'", "-").replace(" ", "-")
 
 
 def get_retrieval_statistics(df: pd.DataFrame,

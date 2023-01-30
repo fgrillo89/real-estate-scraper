@@ -1,5 +1,6 @@
 from real_estate_scraper.parsing import extract_numeric_value, extract_rooms_and_bedrooms, \
-    extract_text_before_and_within_brackets, extract_dutch_postcode_and_city
+    extract_text_before_and_within_brackets, extract_dutch_postcode_and_city, \
+    normalize_city_names
 
 import pytest
 
@@ -74,8 +75,21 @@ def test_extract_dutch_postcode_and_city():
     test_cases = [("3191 XC Hoogvliet Rotterdam", ("3191", "XC", "Hoogvliet Rotterdam")),
                   ("1234 Rotterdam", ("1234", None, "Rotterdam")),
                   (None, None)
-    ]
+                  ]
     for string, expected_result in test_cases:
         result = extract_dutch_postcode_and_city(string)
         assert result == expected_result, f'For input "{string}", expected ' \
                                           f'"{expected_result}" but got "{result}"'
+
+
+def test_normalize_city_names():
+    test_cases = [
+        ("New York", "new-york"),
+        ("San Francisco", "san-francisco"),
+        ("L'Aquila", "l-aquila"),
+    ]
+
+    for string, expected in test_cases:
+        result = normalize_city_names(string)
+        assert result == expected, f'For input "{string}", expected ' \
+                                   f'"{expected}" but got "{result}"'
