@@ -1,15 +1,12 @@
 import asyncio
 import logging
 from asyncio import Semaphore
+from typing import Tuple
 
-import aiohttp
+import geopy
 from aiolimiter import AsyncLimiter
 from geopy import GoogleV3
-from geopy.geocoders import Nominatim
 from geopy.adapters import AioHTTPAdapter
-import geopy
-from typing import Tuple, Iterable
-
 from geopy.exc import GeocoderTimedOut, GeocoderServiceError
 
 from real_estate_scraper.html_handling import add_limiter, add_semaphore
