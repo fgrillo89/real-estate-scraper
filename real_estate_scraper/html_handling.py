@@ -17,7 +17,6 @@ async def get_response(url_str: str,
                        timeout: int = 10,
                        logger: Optional[logging.Logger] = None) -> Union[str, dict, list]:
     retries = 0
-    status = None
     while retries < max_retries:
         try:
             async with aiohttp.ClientSession() as session:
@@ -27,10 +26,9 @@ async def get_response(url_str: str,
                     status = response.status
                     response.raise_for_status()
                     return await process_response(response, read_format=read_format)
-
         except (asyncio.TimeoutError, ClientResponseError) as e:
-            if status and status == 404:
-                msg = f"Error 404, {e}"
+            if isinstance(e, ClientResponseError) and e.status == 404:
+                msg = f"Error {e}"
                 if logger:
                     logger.warning(msg)
                 else:
