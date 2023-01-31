@@ -17,22 +17,26 @@ async def get_response(url_str: str,
                        timeout: int = 10,
                        logger: Optional[logging.Logger] = None) -> Union[str, dict, list]:
     retries = 0
+    status = None
     while retries < max_retries:
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(url_str,
                                        headers=header,
                                        timeout=timeout) as response:
+                    status = response.status
                     response.raise_for_status()
                     return await process_response(response, read_format=read_format)
-        except ClientResponseError as e:
-            msg = f"Could not request {url_str} because of {e}"
-            if logger:
-                logger.warning(msg)
-            else:
-                print(msg)
-            raise e
-        except asyncio.TimeoutError as e:
+
+        except (asyncio.TimeoutError, ClientResponseError) as e:
+            if status and status == 404:
+                msg = f"Error 404, {e}"
+                if logger:
+                    logger.warning(msg)
+                else:
+                    print(msg)
+                raise e
+                return None
             retries += 1
             if retries == max_retries:
                 raise e
@@ -49,7 +53,6 @@ async def get_response(url_str: str,
             else:
                 print(msg)
             raise e
-        return None
 
 
 async def process_response(response: aiohttp.ClientResponse, read_format: str = "text") \
