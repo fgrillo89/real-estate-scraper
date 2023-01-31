@@ -5,6 +5,7 @@ from itertools import chain
 from typing import Union, Optional, Tuple
 
 import pandas as pd
+from aiohttp import ClientResponseError
 from aiolimiter import AsyncLimiter
 from bs4 import BeautifulSoup
 from bs4.element import SoupStrainer
@@ -180,7 +181,10 @@ class Scraper:
                              deep=False,
                              shallow_batch_size: int = 5) -> pd.DataFrame:
 
-        chunks = asyncio.run(self._get_pages_batches(city, pages, shallow_batch_size))
+        try:
+            chunks = asyncio.run(self._get_pages_batches(city, pages, shallow_batch_size))
+        except ClientResponseError as e:
+            return None
 
         item_list = self.house_items_shallow_names
         if deep:
@@ -285,9 +289,9 @@ class Scraper:
                                   header=self.config.website_settings.header,
                                   logger=self.logger,
                                   parse_only=self.parse_only)
-
-        self.logger.info(f"Done requesting {url}")
-        return soup
+        if soup:
+            self.logger.info(f"Done requesting {url}")
+            return soup
 
     def _get_city_url(self, city: Optional[str] = None, page: int = 1) -> str:
         if city is None:

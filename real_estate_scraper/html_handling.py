@@ -5,6 +5,7 @@ from functools import wraps
 from typing import Union, Optional
 
 import aiohttp
+from aiohttp import ClientResponseError
 from aiolimiter import AsyncLimiter
 from bs4 import BeautifulSoup
 
@@ -24,23 +25,31 @@ async def get_response(url_str: str,
                                        timeout=timeout) as response:
                     response.raise_for_status()
                     return await process_response(response, read_format=read_format)
-        except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+        except ClientResponseError as e:
+            msg = f"Could not request {url_str} because of {e}"
+            if logger:
+                logger.warning(msg)
+            else:
+                print(msg)
+            raise e
+        except asyncio.TimeoutError as e:
             retries += 1
             if retries == max_retries:
                 raise e
             msg = f"Retrying request to {url_str} (attempt {retries}/{max_retries})" \
                   f"because of {e}"
             if logger:
-                logging.warning(msg)
+                logger.warning(msg)
             else:
                 print(msg)
         except Exception as e:
             msg = f"Could not request {url_str} because of {e}"
             if logger:
-                logging.warning(msg)
+                logger.warning(msg)
             else:
                 print(msg)
             raise e
+        return None
 
 
 async def process_response(response: aiohttp.ClientResponse, read_format: str = "text") \
@@ -79,13 +88,15 @@ async def get_soup(url: str,
                    parse_only: Optional[list[str]] = None,
                    logger: Optional[logging.Logger] = None) -> BeautifulSoup:
     response = await get_response(url, header=header, logger=logger)
-    return BeautifulSoup(response, "lxml", parse_only=parse_only)
+    if response:
+        return BeautifulSoup(response, "lxml", parse_only=parse_only)
 
 
 async def get_json(url: str,
                    header: Optional[dict[str]] = None,
                    logger: Optional[logging.Logger] = None) -> BeautifulSoup:
     return await get_response(url, header=header, logger=logger, read_format='json')
+
 
 # def get_response_synch(url_str: str, header: dict) -> requests.Response:
 #     return requests.request("GET", url_str, headers=header)
@@ -103,6 +114,7 @@ if __name__ == "__main__":
 
     limit = AsyncLimiter(1, round(1 / 5, 3))
     sem = Semaphore(value=5)
+
 
     @add_semaphore(sem)
     @add_limiter(limit)
