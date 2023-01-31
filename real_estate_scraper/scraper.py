@@ -252,10 +252,10 @@ class Scraper:
                                         urls_shallow)
                                       )
 
-        if not houses:
-            return None
-
         shallow_houses_list = list(chain(*houses))
+
+        if not shallow_houses_list:
+            return None
 
         df_shallow = pd.DataFrame(shallow_houses_list)
         df_shallow["TimeStampShallow"] = get_timestamp()
