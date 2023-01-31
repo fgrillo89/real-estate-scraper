@@ -43,7 +43,7 @@ async def get_response(url_str: str,
                 logger.warning(msg)
             else:
                 print(msg)
-            await asyncio.sleep(1)
+            await asyncio.sleep(2)
         except Exception as e:
             msg = f"Could not request {url_str} because of {e}"
             if logger:
