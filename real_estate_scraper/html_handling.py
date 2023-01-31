@@ -23,7 +23,6 @@ async def get_response(url_str: str,
                 async with session.get(url_str,
                                        headers=header,
                                        timeout=timeout) as response:
-                    status = response.status
                     response.raise_for_status()
                     return await process_response(response, read_format=read_format)
         except (asyncio.TimeoutError, ClientResponseError) as e:
@@ -44,6 +43,7 @@ async def get_response(url_str: str,
                 logger.warning(msg)
             else:
                 print(msg)
+            await asyncio.sleep(1)
         except Exception as e:
             msg = f"Could not request {url_str} because of {e}"
             if logger:
