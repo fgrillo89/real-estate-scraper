@@ -27,8 +27,8 @@ all_city_names = cities_df['Denominazione in italiano'].apply(
 
 table_name = generate_table_name(pages=None, city=None, deep=True)
 
-table_name = "raw.City_all_depth_deep_pages_all_2023-01-30"
-# table_name = "test"
-for city in tqdm(all_city_names):
-    scraper.download_to_db(city=city, deep=True, table_name=table_name)
+df = scraper.download_to_dataframe(city="roma", deep=False, pages=1)
+# # table_name = "test"
+# for city in tqdm(all_city_names):
+#     scraper.download_to_db(city=city, deep=True, table_name=table_name)
 
