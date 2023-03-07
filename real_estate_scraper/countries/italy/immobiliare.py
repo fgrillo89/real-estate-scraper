@@ -89,8 +89,8 @@ for item in immobiliare_config.house_items_deep:
 
 def fetch_location(soup: BeautifulSoup) -> dict:
     text = soup.find("script", attrs={"type": "application/json",
-                                      "id": "js-hydration"}).text
-    return json.loads(text)['listing']['properties'][0]['location']
+                                      "id": "__NEXT_DATA__"}).text
+    return json.loads(text)['props']['pageProps']['detailData']['realEstate']['properties'][0]['location']
 
 
 def fetch_special_item(soup: BeautifulSoup, key1: str, key2: Optional[str] = None):
@@ -113,11 +113,11 @@ def fetch_item_factory(key1: str, key2: Optional[str] = None) -> Callable:
 
 location_items_map = {"Latitude": fetch_item_factory('latitude'),
                       "Longitude": fetch_item_factory('longitude'),
-                      "City": fetch_item_factory('city', 'name'),
-                      "Province": fetch_item_factory('province', 'name'),
-                      "Region": fetch_item_factory('region', 'name'),
-                      "Microzone": fetch_item_factory('microzone', 'name'),
-                      "Macrozone": fetch_item_factory('macrozone', 'name'),
+                      "City": fetch_item_factory('city'),
+                      "Province": fetch_item_factory('province'),
+                      "Region": fetch_item_factory('region'),
+                      "Microzone": fetch_item_factory('microzone'),
+                      "Macrozone": fetch_item_factory('macrozone'),
                       "StreetNumber": fetch_item_factory('streetNumber'),
                       "AddressDeep": fetch_item_factory('address')}
 
