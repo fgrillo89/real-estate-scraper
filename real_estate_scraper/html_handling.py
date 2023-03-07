@@ -13,7 +13,7 @@ from bs4 import BeautifulSoup
 async def get_response(url_str: str,
                        header: dict,
                        read_format: str = "text",
-                       max_retries: int = 3,
+                       max_retries: int = 5,
                        timeout: int = 10,
                        logger: Optional[logging.Logger] = None) -> Union[str, dict, list]:
     retries = 0
@@ -35,15 +35,15 @@ async def get_response(url_str: str,
                 raise e
                 return None
             retries += 1
+            sleep_time = 12*retries
             if retries == max_retries:
                 raise e
-            msg = f"Retrying request to {url_str} (attempt {retries}/{max_retries})" \
-                  f"because of {e}"
+            msg = f"Retrying request to {url_str} (attempt {retries}/{max_retries}) sleeping for {sleep_time} s" 
             if logger:
                 logger.warning(msg)
             else:
                 print(msg)
-            await asyncio.sleep(2)
+            await asyncio.sleep(sleep_time)
         except Exception as e:
             msg = f"Could not request {url_str} because of {e}"
             if logger:
